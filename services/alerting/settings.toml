@@ -1,0 +1,13 @@
+[default]
+SERVICE_NAME = "alerting"
+VERSION = "0.1.0"
+
+LOG_LEVEL = "INFO"
+INTERVAL_SECONDS = 60
+
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
+
+KPI = "revenue"
+BASELINE_DAYS = 7
+THRESHOLD_PCT = 0.3
+MIN_BASELINE = 10

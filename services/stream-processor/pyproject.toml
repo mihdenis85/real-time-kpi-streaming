@@ -1,0 +1,16 @@
+[project]
+name = "stream-processor"
+version = "0.1.0"
+description = "Kafka stream processor for KPI aggregation"
+requires-python = ">=3.14"
+dependencies = [
+    "aiokafka==0.13.0",
+    "asyncpg==0.31.0",
+    "pydantic==2.12.5",
+    "dynaconf",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]

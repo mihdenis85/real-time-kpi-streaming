@@ -1,0 +1,16 @@
+[default]
+SERVICE_NAME = "stream-processor"
+VERSION = "0.1.0"
+
+LOG_LEVEL = "INFO"
+FLUSH_INTERVAL_SECONDS = 10
+DEDUPE_TTL_SECONDS = 300
+LOG_EVERY_N = 200
+
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
+KAFKA_ORDERS_TOPIC = "orders"
+KAFKA_SESSIONS_TOPIC = "sessions"
+KAFKA_GROUP_ID = "stream-processor"
+KAFKA_AUTO_OFFSET_RESET = "earliest"
+
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"

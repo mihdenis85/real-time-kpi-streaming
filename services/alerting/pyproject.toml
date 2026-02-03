@@ -1,0 +1,15 @@
+[project]
+name = "alerting"
+version = "0.1.0"
+description = "Alerting service for KPI anomalies"
+requires-python = ">=3.14"
+dependencies = [
+    "asyncpg==0.31.0",
+    "dynaconf",
+    "pydantic==2.12.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]

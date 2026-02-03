@@ -1,0 +1,17 @@
+[default]
+SERVICE_NAME = "ingest-api"
+VERSION = "0.1.0"
+ROOT_PATH = ""
+
+HOST = "0.0.0.0"
+PORT = 8000
+LOG_LEVEL = "INFO"
+LOG_EVERY_N = 100
+ALLOWED_ORIGINS = ["*"]
+
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
+KAFKA_ORDERS_TOPIC = "orders"
+KAFKA_SESSIONS_TOPIC = "sessions"
+KAFKA_CLIENT_ID = "ingest-api"
+
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"

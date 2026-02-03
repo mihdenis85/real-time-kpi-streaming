@@ -1,0 +1,12 @@
+[project]
+name = "real-time-kpi-streaming"
+version = "0.1.0"
+description = "Real-time KPI platform workspace"
+requires-python = ">=3.14"
+
+[tool.uv.workspace]
+members = [
+    "services/ingest-api",
+    "services/stream-processor",
+    "services/alerting",
+]
