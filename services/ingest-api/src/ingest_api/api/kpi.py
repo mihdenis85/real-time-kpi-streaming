@@ -1,13 +1,21 @@
 from datetime import datetime, timedelta, timezone
-from typing import Literal, Optional
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from ingest_api.api.schemas import AlertSeries, KpiLatest, KpiSeries
+from ingest_api.api.schemas import (
+    AlertSeries,
+    FreshnessResponse,
+    KpiLatest,
+    KpiSeries,
+    TimeToSignalResponse,
+)
 from ingest_api.services.kpi_service import (
     fetch_alerts,
+    fetch_freshness_info,
     fetch_latest_kpi,
     fetch_series,
+    fetch_time_to_signal_info,
 )
 
 router = APIRouter(tags=["kpi"])
@@ -22,21 +30,25 @@ def _ensure_range(start: datetime, end: datetime) -> None:
 async def kpi_latest(
     request: Request,
     bucket: Literal["minute", "hour"] = Query("minute"),
+    channel: str | None = None,
+    campaign: str | None = None,
 ) -> KpiLatest:
     pool = request.app.state.db_pool
     try:
-        point = await fetch_latest_kpi(pool, bucket)
+        point = await fetch_latest_kpi(pool, bucket, channel, campaign)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return KpiLatest(bucket=bucket, point=point)
+    return KpiLatest(bucket=bucket, channel=channel, campaign=campaign, point=point)
 
 
 @router.get("/kpi/minute", response_model=KpiSeries)
 async def kpi_minute(
     request: Request,
-    from_ts: Optional[datetime] = Query(None, alias="from"),
-    to_ts: Optional[datetime] = Query(None, alias="to"),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
     limit: int = Query(2000, ge=1, le=5000),
+    channel: str | None = None,
+    campaign: str | None = None,
 ) -> KpiSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
@@ -44,18 +56,29 @@ async def kpi_minute(
     _ensure_range(from_ts, to_ts)
     pool = request.app.state.db_pool
     try:
-        points = await fetch_series(pool, "minute", from_ts, to_ts, limit)
+        points = await fetch_series(
+            pool, "minute", from_ts, to_ts, limit, channel, campaign
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return KpiSeries(bucket="minute", from_ts=from_ts, to_ts=to_ts, points=points)
+    return KpiSeries(
+        bucket="minute",
+        from_ts=from_ts,
+        to_ts=to_ts,
+        channel=channel,
+        campaign=campaign,
+        points=points,
+    )
 
 
 @router.get("/kpi/hour", response_model=KpiSeries)
 async def kpi_hour(
     request: Request,
-    from_ts: Optional[datetime] = Query(None, alias="from"),
-    to_ts: Optional[datetime] = Query(None, alias="to"),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
     limit: int = Query(2000, ge=1, le=5000),
+    channel: str | None = None,
+    campaign: str | None = None,
 ) -> KpiSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
@@ -63,17 +86,26 @@ async def kpi_hour(
     _ensure_range(from_ts, to_ts)
     pool = request.app.state.db_pool
     try:
-        points = await fetch_series(pool, "hour", from_ts, to_ts, limit)
+        points = await fetch_series(
+            pool, "hour", from_ts, to_ts, limit, channel, campaign
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return KpiSeries(bucket="hour", from_ts=from_ts, to_ts=to_ts, points=points)
+    return KpiSeries(
+        bucket="hour",
+        from_ts=from_ts,
+        to_ts=to_ts,
+        channel=channel,
+        campaign=campaign,
+        points=points,
+    )
 
 
 @router.get("/alerts", response_model=AlertSeries)
 async def alerts(
     request: Request,
-    from_ts: Optional[datetime] = Query(None, alias="from"),
-    to_ts: Optional[datetime] = Query(None, alias="to"),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
     limit: int = Query(500, ge=1, le=2000),
 ) -> AlertSeries:
     now = datetime.now(timezone.utc)
@@ -83,3 +115,41 @@ async def alerts(
     pool = request.app.state.db_pool
     items = await fetch_alerts(pool, from_ts, to_ts, limit)
     return AlertSeries(from_ts=from_ts, to_ts=to_ts, items=items)
+
+
+@router.get("/metrics/freshness", response_model=FreshnessResponse)
+async def metrics_freshness(
+    request: Request,
+    channel: str | None = None,
+    campaign: str | None = None,
+) -> FreshnessResponse:
+    pool = request.app.state.db_pool
+    return await fetch_freshness_info(pool, channel, campaign)
+
+
+@router.get("/metrics/time-to-signal", response_model=TimeToSignalResponse)
+async def metrics_time_to_signal(
+    request: Request,
+    bucket: Literal["minute", "hour"] = Query("minute"),
+    from_ts: datetime | None = Query(None, alias="from"),
+    to_ts: datetime | None = Query(None, alias="to"),
+    channel: str | None = None,
+    campaign: str | None = None,
+) -> TimeToSignalResponse:
+    now = datetime.now(timezone.utc)
+    to_ts = to_ts or now
+    from_ts = from_ts or (to_ts - timedelta(hours=2))
+    _ensure_range(from_ts, to_ts)
+    pool = request.app.state.db_pool
+    data = await fetch_time_to_signal_info(
+        pool, bucket, from_ts, to_ts, channel, campaign
+    )
+    return TimeToSignalResponse(
+        bucket=bucket,
+        from_ts=from_ts,
+        to_ts=to_ts,
+        orders=data["orders"],
+        sessions=data["sessions"],
+        channel=channel,
+        campaign=campaign,
+    )

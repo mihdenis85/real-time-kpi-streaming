@@ -30,24 +30,54 @@ async def fetch_current(
     return float(row[kpi])
 
 
+async def fetch_recent_bucket(
+    conn: asyncpg.Connection, lookback_minutes: int
+) -> datetime | None:
+    row = await conn.fetchrow(
+        """
+        SELECT MAX(bucket) AS bucket
+        FROM kpi_minute
+        WHERE bucket >= NOW() - ($1 * INTERVAL '1 minute')
+        """,
+        lookback_minutes,
+    )
+    if row is None or row["bucket"] is None:
+        return None
+    return row["bucket"]
+
+
 async def fetch_baseline(
     conn: asyncpg.Connection, bucket: datetime, kpi: str, baseline_days: int
 ) -> float | None:
     safe_kpi = validate_kpi(kpi)
     start = bucket - timedelta(days=baseline_days)
-    row = await conn.fetchrow(
-        f"""
-        SELECT AVG({safe_kpi}) AS value
-        FROM kpi_minute
-        WHERE bucket >= $1
-          AND bucket < $2
-          AND EXTRACT(DOW FROM bucket) = EXTRACT(DOW FROM $2::timestamptz)
-          AND EXTRACT(HOUR FROM bucket) = EXTRACT(HOUR FROM $2::timestamptz)
-          AND EXTRACT(MINUTE FROM bucket) = EXTRACT(MINUTE FROM $2::timestamptz)
-        """,
-        start,
-        bucket,
-    )
+    if baseline_days >= 7:
+        row = await conn.fetchrow(
+            f"""
+            SELECT AVG({safe_kpi}) AS value
+            FROM kpi_minute
+            WHERE bucket >= $1
+              AND bucket < $2
+              AND EXTRACT(DOW FROM bucket) = EXTRACT(DOW FROM $2::timestamptz)
+              AND EXTRACT(HOUR FROM bucket) = EXTRACT(HOUR FROM $2::timestamptz)
+              AND EXTRACT(MINUTE FROM bucket) = EXTRACT(MINUTE FROM $2::timestamptz)
+            """,
+            start,
+            bucket,
+        )
+    else:
+        row = await conn.fetchrow(
+            f"""
+            SELECT AVG({safe_kpi}) AS value
+            FROM kpi_minute
+            WHERE bucket >= $1
+              AND bucket < $2
+              AND EXTRACT(HOUR FROM bucket) = EXTRACT(HOUR FROM $2::timestamptz)
+              AND EXTRACT(MINUTE FROM bucket) = EXTRACT(MINUTE FROM $2::timestamptz)
+            """,
+            start,
+            bucket,
+        )
     if row is None or row["value"] is None:
         return None
     return float(row["value"])
@@ -61,8 +91,8 @@ async def insert_alert(
     baseline: float,
     delta_pct: float,
     direction: str,
-) -> None:
-    await conn.execute(
+) -> bool:
+    row = await conn.fetchrow(
         """
         INSERT INTO alerts (
             bucket,
@@ -74,6 +104,7 @@ async def insert_alert(
         )
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (bucket, kpi) DO NOTHING
+        RETURNING id
         """,
         bucket,
         kpi,
@@ -82,3 +113,4 @@ async def insert_alert(
         delta_pct,
         direction,
     )
+    return row is not None

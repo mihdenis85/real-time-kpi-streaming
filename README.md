@@ -86,15 +86,18 @@ DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
 - `POST /events/session` — session step (`view`, `checkout`, `purchase`)
 - `GET /health` — healthcheck
 - `GET /kpi/latest?bucket=minute|hour` — latest KPI point
-- `GET /kpi/minute?from=...&to=...&limit=...` — minute series
-- `GET /kpi/hour?from=...&to=...&limit=...` — hour series
+- `GET /kpi/minute?from=...&to=...&limit=...&channel=...&campaign=...` — minute series
+- `GET /kpi/hour?from=...&to=...&limit=...&channel=...&campaign=...` — hour series
 - `GET /alerts?from=...&to=...&limit=...` — alerts list
+- `GET /metrics/freshness?channel=...&campaign=...` — freshness indicator
+- `GET /metrics/time-to-signal?bucket=minute|hour&from=...&to=...&channel=...&campaign=...` — time-to-signal
 
 ## Frontend API Details
 All timestamps are ISO‑8601 strings in UTC.
 
 ### `GET /kpi/latest`
 - Query: `bucket` (`minute` | `hour`, default `minute`)
+- Optional filters: `channel`, `campaign`
 - Response: latest KPI point with conversion rate.
 
 ### `GET /kpi/minute`
@@ -102,6 +105,8 @@ All timestamps are ISO‑8601 strings in UTC.
   - `from` (optional, ISO datetime)
   - `to` (optional, ISO datetime)
   - `limit` (optional, default 2000, max 5000)
+  - `channel` (optional)
+  - `campaign` (optional)
 - Default window: last 2 hours.
 
 ### `GET /kpi/hour`
@@ -109,6 +114,8 @@ All timestamps are ISO‑8601 strings in UTC.
   - `from` (optional, ISO datetime)
   - `to` (optional, ISO datetime)
   - `limit` (optional, default 2000, max 5000)
+  - `channel` (optional)
+  - `campaign` (optional)
 - Default window: last 3 days.
 
 ### `GET /alerts`
@@ -117,6 +124,18 @@ All timestamps are ISO‑8601 strings in UTC.
   - `to` (optional, ISO datetime)
   - `limit` (optional, default 500, max 2000)
 - Default window: last 24 hours.
+
+### `GET /metrics/freshness`
+- Optional filters: `channel`, `campaign`
+- Returns latest event timestamps and freshness in seconds for orders and sessions.
+
+### `GET /metrics/time-to-signal`
+- Query:
+  - `bucket` (`minute` | `hour`, default `minute`)
+  - `from` / `to` (optional)
+  - `channel` (optional)
+  - `campaign` (optional)
+- Returns average and max time‑to‑signal for orders and sessions.
 
 ## SQL Safety
 All queries are parameterized. The only dynamic column name (KPI in alerting) is strictly validated against a whitelist to prevent injection.

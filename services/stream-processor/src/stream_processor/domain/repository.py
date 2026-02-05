@@ -12,11 +12,12 @@ async def insert_order(conn: asyncpg.Connection, payload: dict[str, Any]) -> boo
             amount,
             currency,
             channel,
+            campaign,
             event_time,
             received_at,
             processed_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT ON CONSTRAINT orders_pkey DO NOTHING
         RETURNING order_id
         """,
@@ -25,6 +26,7 @@ async def insert_order(conn: asyncpg.Connection, payload: dict[str, Any]) -> boo
         float(payload["amount"]),
         payload.get("currency", "USD"),
         payload.get("channel"),
+        payload.get("campaign"),
         payload["event_time"],
         payload["received_at"],
         payload["processed_at"],
@@ -41,11 +43,12 @@ async def insert_session(conn: asyncpg.Connection, payload: dict[str, Any]) -> b
             event_type,
             user_id,
             channel,
+            campaign,
             event_time,
             received_at,
             processed_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         ON CONFLICT ON CONSTRAINT sessions_pkey DO NOTHING
         RETURNING event_id
         """,
@@ -54,6 +57,7 @@ async def insert_session(conn: asyncpg.Connection, payload: dict[str, Any]) -> b
         payload["event_type"],
         payload.get("user_id"),
         payload.get("channel"),
+        payload.get("campaign"),
         payload["event_time"],
         payload["received_at"],
         payload["processed_at"],

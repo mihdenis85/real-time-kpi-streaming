@@ -15,6 +15,7 @@ class Settings(BaseModel):
 
     LOG_LEVEL: str = Field("INFO", description="Logging level")
     INTERVAL_SECONDS: int = Field(60, description="Alert check interval in seconds")
+    LOOKBACK_MINUTES: int = Field(10, description="Lookback window for recent KPIs")
 
     DB_DSN: str = Field(..., description="PostgreSQL DSN")
 

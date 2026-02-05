@@ -17,6 +17,7 @@ async def run() -> None:
         baseline_days=settings.BASELINE_DAYS,
         threshold_pct=settings.THRESHOLD_PCT,
         min_baseline=settings.MIN_BASELINE,
+        lookback_minutes=settings.LOOKBACK_MINUTES,
     )
     try:
         while True:

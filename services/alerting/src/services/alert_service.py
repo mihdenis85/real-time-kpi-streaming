@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 import asyncpg
 from domain.alert_repository import (
     fetch_baseline,
     fetch_current,
+    fetch_recent_bucket,
     insert_alert,
     validate_kpi,
 )
@@ -15,16 +16,23 @@ def minute_bucket(value: datetime) -> datetime:
 
 class AlertService:
     def __init__(
-        self, kpi: str, baseline_days: int, threshold_pct: float, min_baseline: float
+        self,
+        kpi: str,
+        baseline_days: int,
+        threshold_pct: float,
+        min_baseline: float,
+        lookback_minutes: int,
     ) -> None:
         self.kpi = validate_kpi(kpi)
         self.baseline_days = baseline_days
         self.threshold_pct = threshold_pct
         self.min_baseline = min_baseline
+        self.lookback_minutes = lookback_minutes
 
     async def check_and_alert(self, conn: asyncpg.Connection) -> bool:
-        now = datetime.now(timezone.utc)
-        bucket = minute_bucket(now) - timedelta(minutes=1)
+        bucket = await fetch_recent_bucket(conn, self.lookback_minutes)
+        if bucket is None:
+            return False
 
         current = await fetch_current(conn, bucket, self.kpi)
         if current is None:
@@ -39,7 +47,7 @@ class AlertService:
             return False
 
         direction = "up" if delta_pct > 0 else "down"
-        await insert_alert(
+        inserted = await insert_alert(
             conn, bucket, self.kpi, current, baseline, delta_pct, direction
         )
-        return True
+        return inserted
