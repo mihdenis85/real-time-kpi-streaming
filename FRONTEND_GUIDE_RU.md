@@ -38,6 +38,91 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
 
 ---
 
+## 3.4 Примеры ответов API
+
+### `/kpi/latest`
+```
+{
+  "bucket": "minute",
+  "point": {
+    "bucket": "2026-02-05T10:59:00Z",
+    "revenue": 280.0,
+    "order_count": 3,
+    "session_count": 2,
+    "checkout_count": 0,
+    "purchase_count": 1,
+    "conversion_rate": 0.5
+  }
+}
+```
+
+### `/kpi/minute`
+```
+{
+  "bucket": "minute",
+  "from_ts": "2026-02-05T10:00:00Z",
+  "to_ts": "2026-02-05T11:00:00Z",
+  "channel": "web",
+  "campaign": "spring",
+  "points": [
+    {
+      "bucket": "2026-02-05T10:00:00Z",
+      "revenue": 200.0,
+      "order_count": 2,
+      "session_count": 1,
+      "checkout_count": 0,
+      "purchase_count": 1,
+      "conversion_rate": 1.0
+    }
+  ]
+}
+```
+
+### `/metrics/freshness`
+```
+{
+  "orders_last_event_time": "2026-02-05T10:59:20Z",
+  "sessions_last_event_time": "2026-02-05T10:59:40Z",
+  "orders_freshness_seconds": 12,
+  "sessions_freshness_seconds": 4
+}
+```
+
+### `/metrics/time-to-signal`
+```
+{
+  "bucket": "minute",
+  "from_ts": "2026-02-05T10:00:00Z",
+  "to_ts": "2026-02-05T11:00:00Z",
+  "channel": "web",
+  "campaign": "spring",
+  "orders": { "avg_seconds": 6.2, "max_seconds": 14.8 },
+  "sessions": { "avg_seconds": 5.1, "max_seconds": 12.4 }
+}
+```
+
+### `/alerts`
+```
+{
+  "from_ts": "2026-02-05T10:00:00Z",
+  "to_ts": "2026-02-05T11:00:00Z",
+  "items": [
+    {
+      "id": 1,
+      "bucket": "2026-02-05T10:55:00Z",
+      "kpi": "revenue",
+      "current_value": 10.0,
+      "baseline_value": 100.0,
+      "delta_pct": -0.9,
+      "direction": "down",
+      "created_at": "2026-02-05T10:56:05Z"
+    }
+  ]
+}
+```
+
+---
+
 ## 4) Фильтры сегментации
 В KPI‑запросах доступны:
 - `channel` (например: `web`, `ads`, `marketplace`)
