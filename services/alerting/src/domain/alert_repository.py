@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 import asyncpg
 
-
 ALLOWED_KPIS = {
     "revenue",
     "order_count",
@@ -30,6 +29,28 @@ async def fetch_current(
     return float(row[kpi])
 
 
+async def fetch_smoothed_current(
+    conn: asyncpg.Connection,
+    bucket: datetime,
+    kpi: str,
+    window_minutes: int,
+) -> float | None:
+    safe_kpi = validate_kpi(kpi)
+    row = await conn.fetchrow(
+        f"""
+        SELECT AVG({safe_kpi}) AS value
+        FROM kpi_minute
+        WHERE bucket >= $1
+          AND bucket <= $2
+        """,
+        bucket - timedelta(minutes=window_minutes - 1),
+        bucket,
+    )
+    if row is None or row["value"] is None:
+        return None
+    return float(row["value"])
+
+
 async def fetch_recent_bucket(
     conn: asyncpg.Connection, lookback_minutes: int
 ) -> datetime | None:
@@ -44,6 +65,23 @@ async def fetch_recent_bucket(
     if row is None or row["bucket"] is None:
         return None
     return row["bucket"]
+
+
+async def fetch_recent_buckets(
+    conn: asyncpg.Connection, lookback_minutes: int, count: int
+) -> list[datetime]:
+    rows = await conn.fetch(
+        """
+        SELECT bucket
+        FROM kpi_minute
+        WHERE bucket >= NOW() - ($1 * INTERVAL '1 minute')
+        ORDER BY bucket DESC
+        LIMIT $2
+        """,
+        lookback_minutes,
+        count,
+    )
+    return [row["bucket"] for row in reversed(rows)]
 
 
 async def fetch_baseline(

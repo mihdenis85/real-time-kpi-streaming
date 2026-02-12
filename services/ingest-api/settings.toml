@@ -2,6 +2,7 @@
 SERVICE_NAME = "ingest-api"
 VERSION = "0.1.0"
 ROOT_PATH = ""
+API_KEY = "dev-key"
 
 HOST = "0.0.0.0"
 PORT = 8000

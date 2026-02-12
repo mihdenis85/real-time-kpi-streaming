@@ -13,6 +13,7 @@ class Settings(BaseModel):
     SERVICE_NAME: str = Field(..., description="Name of the service")
     VERSION: str = Field(..., description="Service version")
     ROOT_PATH: str = Field("", description="API root path")
+    API_KEY: str = Field(..., description="Shared API key for requests")
 
     HOST: str = Field("0.0.0.0", description="Bind host")
     PORT: int = Field(8000, description="Bind port")

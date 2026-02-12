@@ -1,6 +1,6 @@
 # Real-time KPI Platform (Kafka + TimescaleDB + FastAPI)
 
-This repository provides a compact, production‑leaning real‑time KPI platform for SMB teams: ingestion API, Kafka (KRaft), a stream processor, TimescaleDB, Grafana, and alerting.
+This repository provides a compact, production‑leaning real‑time KPI platform for SMB teams: ingestion API, Kafka (KRaft), a stream processor, TimescaleDB, and alerting.
 
 ## Quick Start
 1. Review each service `.secrets.toml` (local only, ignored by git).
@@ -8,18 +8,19 @@ This repository provides a compact, production‑leaning real‑time KPI platfor
    ```bash
    docker compose up --build
    ```
-3. Send sample events:
+3. Send sample events (API key required):
    ```bash
    curl -X POST http://localhost:8000/events/order \
+     -H "X-API-Key: dev-key" \
      -H "Content-Type: application/json" \
      -d '{"order_id":"o-1","customer_id":"c-1","amount":120.5,"currency":"USD","channel":"web","event_time":"2026-02-03T10:00:00Z"}'
 
    curl -X POST http://localhost:8000/events/session \
+     -H "X-API-Key: dev-key" \
      -H "Content-Type: application/json" \
      -d '{"session_id":"s-1","event_type":"view","channel":"web","event_time":"2026-02-03T10:00:05Z"}'
    ```
 4. Inspect KPIs:
-   - Grafana: http://localhost:3000 (admin/admin)
    - TimescaleDB: `SELECT * FROM kpi_minute_view ORDER BY bucket DESC LIMIT 10;`
 
 ## Architecture
@@ -27,7 +28,6 @@ This repository provides a compact, production‑leaning real‑time KPI platfor
 - `stream-processor`: Kafka consumer with dedupe, aggregation, and TimescaleDB writes.
 - `alerting`: periodic SQL checks writing alerts into `alerts`.
 - `timescaledb`: event facts + KPI aggregates.
-- `grafana`: KPI visualization.
 
 ## How it Works (Detailed)
 1. **Events hit the ingestion API**  
@@ -48,14 +48,11 @@ This repository provides a compact, production‑leaning real‑time KPI platfor
    Aggregates are stored in `kpi_minute` and `kpi_hour` (revenue, counts, etc.).  
    Views (`kpi_minute_view`, `kpi_hour_view`) add derived metrics like conversion.
 
-6. **Grafana queries aggregates directly**  
-   Dashboards stay fast because aggregates are precomputed in the database.
-
-7. **Alerting compares against a seasonal baseline**  
+6. **Alerting compares against a seasonal baseline**  
    Every minute it compares the latest closed bucket to past data from the same weekday/time.  
    Threshold breaches create a row in `alerts`.
 
-8. **Key technical metrics**  
+7. **Key technical metrics**  
    - **Latency**: `processed_at - event_time`  
    - **Freshness**: `now - max(event_time)`  
    - **Deduplication**: ratio of unique IDs vs total events  
@@ -71,6 +68,7 @@ Examples:
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
 ALLOWED_ORIGINS = ["http://localhost:5173"]
+API_KEY = "dev-key"
 
 # services/stream-processor/.secrets.toml
 [default]
@@ -82,6 +80,7 @@ DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
 ```
 
 ## Endpoints
+All endpoints require `X-API-Key` header.
 - `POST /events/order` — order event
 - `POST /events/session` — session step (`view`, `checkout`, `purchase`)
 - `GET /health` — healthcheck

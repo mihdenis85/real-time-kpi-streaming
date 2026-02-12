@@ -56,17 +56,6 @@ services:
       timeout: 5s
       retries: 12
 
-  grafana:
-    image: grafana/grafana:12.3.2
-    depends_on:
-      timescaledb:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-
   ingest-api:
     build: ./services/ingest-api
     depends_on:

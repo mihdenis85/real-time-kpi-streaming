@@ -18,6 +18,8 @@ async def run() -> None:
         threshold_pct=settings.THRESHOLD_PCT,
         min_baseline=settings.MIN_BASELINE,
         lookback_minutes=settings.LOOKBACK_MINUTES,
+        current_window_minutes=settings.CURRENT_WINDOW_MINUTES,
+        duration_minutes=settings.DURATION_MINUTES,
     )
     try:
         while True:
