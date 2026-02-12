@@ -10,18 +10,17 @@ SEND_INTERVAL_SECONDS = 20              # Интервал отправки ти
 
 BASE_ORDERS_PER_TICK = 2   # Среднее число заказов за тик.
 ORDER_COUNT_JITTER = 1.0   # Разброс количества заказов.
-BASE_SESSIONS_PER_TICK = 4 # Среднее число сессий за тик.
-SESSION_COUNT_JITTER = 1.5 # Разброс количества сессий.
-MIN_VIEWS_PER_ORDER = 5    # Минимум просмотров на 1 заказ.
+BASE_SESSIONS_PER_TICK = 6 # Среднее число сессий за тик.
+SESSION_COUNT_JITTER = 2.0 # Разброс количества сессий.
+MIN_VIEWS_PER_ORDER = 25   # Минимум просмотров на 1 заказ.
 
-ORDER_BASE_AMOUNT_RUB = 1200.0 # Базовая сумма заказа (рубли).
-ORDER_AMOUNT_STDDEV = 150.0    # Разброс суммы заказа.
+PRICE_LIST_RUB = [99.0, 129.0, 149.0, 199.0, 249.0] # Доступные цены.
+ORDER_PROB = 0.04 # Базовая вероятность заказа на один просмотр.
 
 CHANNELS = ["web", "ads", "marketplace"] # Доступные каналы.
 CAMPAIGNS = ["spring", "promo", "brand"] # Доступные кампании.
 
 CHECKOUT_RATE = 0.35 # Вероятность шага checkout.
-PURCHASE_RATE = 0.12 # Вероятность шага purchase.
 
 ANOMALY_PROB = 0.02           # Вероятность аномального тика.
 ANOMALY_LOW_MULTIPLIER = 0.4  # Множитель для просадки.
@@ -37,6 +36,11 @@ SEASONAL_PEAK_HOURS_UTC = [10, 11, 12, 13, 14] # Дневной пик (UTC).
 SEASONAL_EVENING_HOURS_UTC = [18, 19, 20, 21]  # Вечерний спад (UTC).
 SEASONAL_PEAK_MULTIPLIER = 1.5                 # Множитель дневного пика.
 SEASONAL_EVENING_MULTIPLIER = 0.8              # Множитель вечернего спада.
+
+PEAK_ORDER_MULTIPLIER = 1.3          # Множитель вероятности заказа (пик).
+QUIET_ORDER_MULTIPLIER = 0.7         # Множитель вероятности заказа (тихо).
+SEASONAL_PEAK_ORDER_MULTIPLIER = 1.2 # Множитель вероятности заказа (дневной пик).
+SEASONAL_EVENING_ORDER_MULTIPLIER = 0.8 # Множитель вероятности заказа (вечер).
 
 FIXED_ANOMALY_ENABLED = false      # Включить аномалии по расписанию.
 FIXED_ANOMALY_INTERVAL_MINUTES = 60 # Интервал аномалий (минуты).

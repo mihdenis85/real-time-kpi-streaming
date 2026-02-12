@@ -25,20 +25,21 @@ class Settings(BaseModel):
     SESSION_COUNT_JITTER: float = Field(2.0, description="Sessions jitter")
     MIN_VIEWS_PER_ORDER: int = Field(5, description="Minimum views per order")
 
-    ORDER_BASE_AMOUNT_RUB: float = Field(1200.0, description="Base order amount")
-    ORDER_AMOUNT_STDDEV: float = Field(150.0, description="Amount stddev")
+    PRICE_LIST_RUB: list[float] = Field(
+        default_factory=lambda: [99.0, 129.0, 149.0, 199.0, 249.0]
+    )
+    ORDER_PROB: float = Field(0.04, description="Base order probability per view")
 
     CHANNELS: list[str] = Field(default_factory=lambda: ["web", "ads", "marketplace"])
     CAMPAIGNS: list[str] = Field(default_factory=lambda: ["spring", "promo", "brand"])
 
     CHECKOUT_RATE: float = Field(0.35, description="Checkout probability")
-    PURCHASE_RATE: float = Field(0.12, description="Purchase probability")
 
     ANOMALY_PROB: float = Field(0.03, description="Anomaly probability per tick")
     ANOMALY_LOW_MULTIPLIER: float = Field(0.4, description="Low anomaly factor")
     ANOMALY_HIGH_MULTIPLIER: float = Field(2.0, description="High anomaly factor")
 
-    SCHEDULE_MODE: str = Field("off", description="off | day-night | seasonal")
+    SCHEDULE_MODE: str = Field("seasonal", description="off | day-night | seasonal")
     PEAK_HOURS_UTC: list[int] = Field(default_factory=lambda: [9, 10, 11, 12, 13])
     QUIET_HOURS_UTC: list[int] = Field(default_factory=lambda: [0, 1, 2, 3, 4, 5])
     PEAK_MULTIPLIER: float = Field(1.6, description="Multiplier for peak hours")
@@ -52,6 +53,19 @@ class Settings(BaseModel):
     SEASONAL_PEAK_MULTIPLIER: float = Field(1.5, description="Day peak multiplier")
     SEASONAL_EVENING_MULTIPLIER: float = Field(
         0.8, description="Evening dip multiplier"
+    )
+
+    PEAK_ORDER_MULTIPLIER: float = Field(
+        1.3, description="Order probability multiplier for peak"
+    )
+    QUIET_ORDER_MULTIPLIER: float = Field(
+        0.7, description="Order probability multiplier for quiet"
+    )
+    SEASONAL_PEAK_ORDER_MULTIPLIER: float = Field(
+        1.2, description="Order probability multiplier for seasonal peak"
+    )
+    SEASONAL_EVENING_ORDER_MULTIPLIER: float = Field(
+        0.8, description="Order probability multiplier for seasonal evening"
     )
 
     FIXED_ANOMALY_ENABLED: bool = Field(

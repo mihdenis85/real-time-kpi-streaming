@@ -53,6 +53,22 @@ def schedule_factor(now: datetime) -> float:
     return 1.0
 
 
+def schedule_order_factor(now: datetime) -> float:
+    if settings.SCHEDULE_MODE == "day-night":
+        if now.hour in settings.PEAK_HOURS_UTC:
+            return settings.PEAK_ORDER_MULTIPLIER
+        if now.hour in settings.QUIET_HOURS_UTC:
+            return settings.QUIET_ORDER_MULTIPLIER
+        return 1.0
+    if settings.SCHEDULE_MODE == "seasonal":
+        if now.hour in settings.SEASONAL_PEAK_HOURS_UTC:
+            return settings.SEASONAL_PEAK_ORDER_MULTIPLIER
+        if now.hour in settings.SEASONAL_EVENING_HOURS_UTC:
+            return settings.SEASONAL_EVENING_ORDER_MULTIPLIER
+        return 1.0
+    return 1.0
+
+
 def fixed_anomaly_factor(now: datetime) -> float | None:
     if not settings.FIXED_ANOMALY_ENABLED:
         return None
@@ -86,6 +102,7 @@ async def run_once(client: httpx.AsyncClient) -> None:
     now = datetime.now(timezone.utc)
     event_time = isoformat_z(now)
     schedule = schedule_factor(now)
+    order_schedule = schedule_order_factor(now)
     fixed = fixed_anomaly_factor(now)
     factor = schedule * (fixed if fixed is not None else anomaly_factor())
 
@@ -96,37 +113,6 @@ async def run_once(client: httpx.AsyncClient) -> None:
         settings.BASE_SESSIONS_PER_TICK * factor, settings.SESSION_COUNT_JITTER
     )
     sessions_count = max(sessions_count, orders_count * settings.MIN_VIEWS_PER_ORDER)
-
-    for _ in range(orders_count):
-        channel, campaign = pick_segment()
-        amount = random.gauss(
-            settings.ORDER_BASE_AMOUNT_RUB * factor, settings.ORDER_AMOUNT_STDDEV
-        )
-        order_id = random_id("o")
-        await post_event(
-            client,
-            "/events/order",
-            {
-                "order_id": order_id,
-                "amount": round(max(1.0, amount), 2),
-                "currency": "RUB",
-                "channel": channel,
-                "campaign": campaign,
-                "event_time": event_time,
-            },
-        )
-
-        await post_event(
-            client,
-            "/events/session",
-            {
-                "session_id": f"s-{order_id}",
-                "event_type": "purchase",
-                "channel": channel,
-                "campaign": campaign,
-                "event_time": event_time,
-            },
-        )
 
     for _ in range(sessions_count):
         channel, campaign = pick_segment()
@@ -156,12 +142,28 @@ async def run_once(client: httpx.AsyncClient) -> None:
                 },
             )
 
-        if random.random() < settings.PURCHASE_RATE:
+        order_prob = min(1.0, settings.ORDER_PROB * order_schedule)
+        if random.random() < order_prob:
+            order_id = random_id("o")
+            amount = random.choice(settings.PRICE_LIST_RUB)
+            await post_event(
+                client,
+                "/events/order",
+                {
+                    "order_id": order_id,
+                    "amount": amount,
+                    "currency": "RUB",
+                    "channel": channel,
+                    "campaign": campaign,
+                    "event_time": event_time,
+                },
+            )
+
             await post_event(
                 client,
                 "/events/session",
                 {
-                    "session_id": session_id,
+                    "session_id": f"s-{order_id}",
                     "event_type": "purchase",
                     "channel": channel,
                     "campaign": campaign,
