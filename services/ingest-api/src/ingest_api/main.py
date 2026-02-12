@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from aiokafka import AIOKafkaProducer
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 
 from ingest_api.api.ingest import router as ingest_router
 from ingest_api.api.kpi import router as kpi_router
@@ -15,10 +16,11 @@ settings = get_settings()
 logger = logging.getLogger("ingest-api")
 
 
-def require_api_key(
-    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
-) -> None:
-    if x_api_key != settings.API_KEY:
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def require_api_key(api_key: str | None = Depends(api_key_header)) -> None:
+    if api_key != settings.API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 

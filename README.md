@@ -23,10 +23,61 @@ This repository provides a compact, production‑leaning real‑time KPI platfor
 4. Inspect KPIs:
    - TimescaleDB: `SELECT * FROM kpi_minute_view ORDER BY bucket DESC LIMIT 10;`
 
+Simulator is enabled by default. To stop synthetic traffic, set `ENABLED = false` in `services/simulator/settings.toml`.
+
+## Simulator Load Profiles
+Below are sample profiles for `services/simulator/settings.toml`. Copy one block and tune as needed.
+
+### Normal
+```
+ENABLED = true
+SEND_INTERVAL_SECONDS = 20
+BASE_ORDERS_PER_TICK = 2
+ORDER_COUNT_JITTER = 1.0
+BASE_SESSIONS_PER_TICK = 4
+SESSION_COUNT_JITTER = 1.5
+ORDER_BASE_AMOUNT_RUB = 1200.0
+ORDER_AMOUNT_STDDEV = 150.0
+ANOMALY_PROB = 0.02
+ANOMALY_LOW_MULTIPLIER = 0.4
+ANOMALY_HIGH_MULTIPLIER = 2.0
+```
+
+### Peak
+```
+ENABLED = true
+SEND_INTERVAL_SECONDS = 10
+BASE_ORDERS_PER_TICK = 5
+ORDER_COUNT_JITTER = 2.0
+BASE_SESSIONS_PER_TICK = 10
+SESSION_COUNT_JITTER = 3.0
+ORDER_BASE_AMOUNT_RUB = 1300.0
+ORDER_AMOUNT_STDDEV = 200.0
+ANOMALY_PROB = 0.03
+ANOMALY_LOW_MULTIPLIER = 0.5
+ANOMALY_HIGH_MULTIPLIER = 2.5
+```
+
+### Quiet
+```
+ENABLED = true
+SEND_INTERVAL_SECONDS = 30
+BASE_ORDERS_PER_TICK = 1
+ORDER_COUNT_JITTER = 0.5
+BASE_SESSIONS_PER_TICK = 2
+SESSION_COUNT_JITTER = 0.8
+ORDER_BASE_AMOUNT_RUB = 900.0
+ORDER_AMOUNT_STDDEV = 120.0
+ANOMALY_PROB = 0.02
+ANOMALY_LOW_MULTIPLIER = 0.4
+ANOMALY_HIGH_MULTIPLIER = 1.8
+```
+
 ## Architecture
 - `ingest-api`: FastAPI service for accepting events and publishing to Kafka.
 - `stream-processor`: Kafka consumer with dedupe, aggregation, and TimescaleDB writes.
 - `alerting`: periodic SQL checks writing alerts into `alerts`.
+- `simulator`: optional synthetic traffic generator for demo/testing.
 - `timescaledb`: event facts + KPI aggregates.
 
 ## How it Works (Detailed)
@@ -77,6 +128,10 @@ DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
 # services/alerting/.secrets.toml
 [default]
 DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
+
+# services/simulator/.secrets.toml
+[default]
+API_KEY = "dev-key"
 ```
 
 ## Endpoints

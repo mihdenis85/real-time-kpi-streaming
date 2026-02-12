@@ -1,0 +1,27 @@
+[default]
+SERVICE_NAME = "simulator"
+VERSION = "0.1.0"
+
+LOG_LEVEL = "INFO"
+ENABLED = true     # Включить/выключить генерацию событий.
+
+API_BASE_URL = "http://ingest-api:8000" # Базовый URL ingest API.
+SEND_INTERVAL_SECONDS = 20              # Интервал отправки тика (секунды).
+
+BASE_ORDERS_PER_TICK = 2   # Среднее число заказов за тик.
+ORDER_COUNT_JITTER = 1.0   # Разброс количества заказов.
+BASE_SESSIONS_PER_TICK = 4 # Среднее число сессий за тик.
+SESSION_COUNT_JITTER = 1.5 # Разброс количества сессий.
+
+ORDER_BASE_AMOUNT_RUB = 1200.0 # Базовая сумма заказа (рубли).
+ORDER_AMOUNT_STDDEV = 150.0    # Разброс суммы заказа.
+
+CHANNELS = ["web", "ads", "marketplace"] # Доступные каналы.
+CAMPAIGNS = ["spring", "promo", "brand"] # Доступные кампании.
+
+CHECKOUT_RATE = 0.35 # Вероятность шага checkout.
+PURCHASE_RATE = 0.12 # Вероятность шага purchase.
+
+ANOMALY_PROB = 0.02           # Вероятность аномального тика.
+ANOMALY_LOW_MULTIPLIER = 0.4  # Множитель для просадки.
+ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель для всплеска.

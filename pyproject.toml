@@ -9,4 +9,5 @@ members = [
     "services/ingest-api",
     "services/stream-processor",
     "services/alerting",
+    "services/simulator",
 ]

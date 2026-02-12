@@ -1,0 +1,15 @@
+[project]
+name = "simulator"
+version = "0.1.0"
+description = "Synthetic KPI data simulator"
+requires-python = ">=3.14"
+dependencies = [
+    "dynaconf",
+    "httpx==0.28.1",
+    "pydantic==2.12.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]

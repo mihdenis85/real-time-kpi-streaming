@@ -86,5 +86,13 @@ services:
     volumes:
       - ./services/alerting/.secrets.toml:/app/.secrets.toml:ro
 
+  simulator:
+    build: ./services/simulator
+    depends_on:
+      ingest-api:
+        condition: service_started
+    volumes:
+      - ./services/simulator/.secrets.toml:/app/.secrets.toml:ro
+
 volumes:
   timescaledb-data:
