@@ -37,6 +37,37 @@ def anomaly_factor() -> float:
     )
 
 
+def schedule_factor(now: datetime) -> float:
+    if settings.SCHEDULE_MODE == "day-night":
+        if now.hour in settings.PEAK_HOURS_UTC:
+            return settings.PEAK_MULTIPLIER
+        if now.hour in settings.QUIET_HOURS_UTC:
+            return settings.QUIET_MULTIPLIER
+        return 1.0
+    if settings.SCHEDULE_MODE == "seasonal":
+        if now.hour in settings.SEASONAL_PEAK_HOURS_UTC:
+            return settings.SEASONAL_PEAK_MULTIPLIER
+        if now.hour in settings.SEASONAL_EVENING_HOURS_UTC:
+            return settings.SEASONAL_EVENING_MULTIPLIER
+        return 1.0
+    return 1.0
+
+
+def fixed_anomaly_factor(now: datetime) -> float | None:
+    if not settings.FIXED_ANOMALY_ENABLED:
+        return None
+    if settings.FIXED_ANOMALY_INTERVAL_MINUTES <= 0:
+        return None
+    slot = int(now.timestamp() // 60) // settings.FIXED_ANOMALY_INTERVAL_MINUTES
+    if settings.FIXED_ANOMALY_MODE == "low":
+        return settings.FIXED_ANOMALY_LOW_MULTIPLIER
+    if settings.FIXED_ANOMALY_MODE == "high":
+        return settings.FIXED_ANOMALY_HIGH_MULTIPLIER
+    if slot % 2 == 0:
+        return settings.FIXED_ANOMALY_LOW_MULTIPLIER
+    return settings.FIXED_ANOMALY_HIGH_MULTIPLIER
+
+
 def pick_segment() -> tuple[str, str]:
     return random.choice(settings.CHANNELS), random.choice(settings.CAMPAIGNS)
 
@@ -54,7 +85,9 @@ async def post_event(
 async def run_once(client: httpx.AsyncClient) -> None:
     now = datetime.now(timezone.utc)
     event_time = isoformat_z(now)
-    factor = anomaly_factor()
+    schedule = schedule_factor(now)
+    fixed = fixed_anomaly_factor(now)
+    factor = schedule * (fixed if fixed is not None else anomaly_factor())
 
     orders_count = sample_count(
         settings.BASE_ORDERS_PER_TICK * factor, settings.ORDER_COUNT_JITTER
@@ -62,6 +95,7 @@ async def run_once(client: httpx.AsyncClient) -> None:
     sessions_count = sample_count(
         settings.BASE_SESSIONS_PER_TICK * factor, settings.SESSION_COUNT_JITTER
     )
+    sessions_count = max(sessions_count, orders_count * settings.MIN_VIEWS_PER_ORDER)
 
     for _ in range(orders_count):
         channel, campaign = pick_segment()

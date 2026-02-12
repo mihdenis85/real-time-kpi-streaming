@@ -12,6 +12,7 @@ BASE_ORDERS_PER_TICK = 2   # Среднее число заказов за ти�
 ORDER_COUNT_JITTER = 1.0   # Разброс количества заказов.
 BASE_SESSIONS_PER_TICK = 4 # Среднее число сессий за тик.
 SESSION_COUNT_JITTER = 1.5 # Разброс количества сессий.
+MIN_VIEWS_PER_ORDER = 5    # Минимум просмотров на 1 заказ.
 
 ORDER_BASE_AMOUNT_RUB = 1200.0 # Базовая сумма заказа (рубли).
 ORDER_AMOUNT_STDDEV = 150.0    # Разброс суммы заказа.
@@ -25,3 +26,20 @@ PURCHASE_RATE = 0.12 # Вероятность шага purchase.
 ANOMALY_PROB = 0.02           # Вероятность аномального тика.
 ANOMALY_LOW_MULTIPLIER = 0.4  # Множитель для просадки.
 ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель для всплеска.
+
+SCHEDULE_MODE = "off"              # off | day-night | seasonal
+PEAK_HOURS_UTC = [9, 10, 11, 12, 13] # Пиковые часы (UTC).
+QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5] # Тихие часы (UTC).
+PEAK_MULTIPLIER = 1.6              # Множитель в пиковые часы.
+QUIET_MULTIPLIER = 0.6             # Множитель в тихие часы.
+
+SEASONAL_PEAK_HOURS_UTC = [10, 11, 12, 13, 14] # Дневной пик (UTC).
+SEASONAL_EVENING_HOURS_UTC = [18, 19, 20, 21]  # Вечерний спад (UTC).
+SEASONAL_PEAK_MULTIPLIER = 1.5                 # Множитель дневного пика.
+SEASONAL_EVENING_MULTIPLIER = 0.8              # Множитель вечернего спада.
+
+FIXED_ANOMALY_ENABLED = false      # Включить аномалии по расписанию.
+FIXED_ANOMALY_INTERVAL_MINUTES = 60 # Интервал аномалий (минуты).
+FIXED_ANOMALY_MODE = "alternate"   # low | high | alternate
+FIXED_ANOMALY_LOW_MULTIPLIER = 0.4 # Множитель фикс. просадки.
+FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель фикс. всплеска.

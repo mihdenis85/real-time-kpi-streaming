@@ -73,6 +73,27 @@ ANOMALY_LOW_MULTIPLIER = 0.4
 ANOMALY_HIGH_MULTIPLIER = 1.8
 ```
 
+### Schedule and Fixed Anomalies
+```
+SCHEDULE_MODE = "day-night"
+PEAK_HOURS_UTC = [9, 10, 11, 12, 13]
+QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5]
+PEAK_MULTIPLIER = 1.6
+QUIET_MULTIPLIER = 0.6
+
+SCHEDULE_MODE = "seasonal"
+SEASONAL_PEAK_HOURS_UTC = [10, 11, 12, 13, 14]
+SEASONAL_EVENING_HOURS_UTC = [18, 19, 20, 21]
+SEASONAL_PEAK_MULTIPLIER = 1.5
+SEASONAL_EVENING_MULTIPLIER = 0.8
+
+FIXED_ANOMALY_ENABLED = true
+FIXED_ANOMALY_INTERVAL_MINUTES = 60
+FIXED_ANOMALY_MODE = "alternate"
+FIXED_ANOMALY_LOW_MULTIPLIER = 0.4
+FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0
+```
+
 ## Architecture
 - `ingest-api`: FastAPI service for accepting events and publishing to Kafka.
 - `stream-processor`: Kafka consumer with dedupe, aggregation, and TimescaleDB writes.
