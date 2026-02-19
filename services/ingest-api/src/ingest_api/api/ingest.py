@@ -23,7 +23,16 @@ async def _publish(
     )
 
 
-@router.post("/events/order", response_model=IngestResponse)
+@router.post(
+    "/events/order",
+    response_model=IngestResponse,
+    summary="Publish order event",
+    description=(
+        "Validates order payload and publishes it to the Kafka orders topic. "
+        "Returns accepted status with final event_id."
+    ),
+    response_description="Accepted status and event identifier.",
+)
 async def ingest_order(event: OrderEvent, request: Request) -> IngestResponse:
     producer: AIOKafkaProducer = request.app.state.producer
     event_id = event.event_id or event.order_id
@@ -38,7 +47,16 @@ async def ingest_order(event: OrderEvent, request: Request) -> IngestResponse:
     return IngestResponse(status="accepted", event_id=event_id)
 
 
-@router.post("/events/session", response_model=IngestResponse)
+@router.post(
+    "/events/session",
+    response_model=IngestResponse,
+    summary="Publish session event",
+    description=(
+        "Validates session payload and publishes it to the Kafka sessions topic. "
+        "Returns accepted status with final event_id."
+    ),
+    response_description="Accepted status and event identifier.",
+)
 async def ingest_session(event: SessionEvent, request: Request) -> IngestResponse:
     producer: AIOKafkaProducer = request.app.state.producer
     event_id = event.event_id or make_event_id(

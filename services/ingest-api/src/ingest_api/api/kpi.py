@@ -26,12 +26,23 @@ def _ensure_range(start: datetime, end: datetime) -> None:
         raise HTTPException(status_code=400, detail="from must be <= to")
 
 
-@router.get("/kpi/latest", response_model=KpiLatest)
+@router.get(
+    "/kpi/latest",
+    response_model=KpiLatest,
+    summary="Get latest KPI point",
+    description=(
+        "Returns the latest aggregated KPI point for the selected bucket "
+        "(minute or hour), with optional segmentation by channel/campaign."
+    ),
+    response_description="Latest KPI point and applied filters.",
+)
 async def kpi_latest(
     request: Request,
-    bucket: Literal["minute", "hour"] = Query("minute"),
-    channel: str | None = None,
-    campaign: str | None = None,
+    bucket: Literal["minute", "hour"] = Query(
+        "minute", description="Aggregation bucket: minute or hour."
+    ),
+    channel: str | None = Query(None, description="Optional channel filter."),
+    campaign: str | None = Query(None, description="Optional campaign filter."),
 ) -> KpiLatest:
     pool = request.app.state.db_pool
     try:
@@ -41,14 +52,25 @@ async def kpi_latest(
     return KpiLatest(bucket=bucket, channel=channel, campaign=campaign, point=point)
 
 
-@router.get("/kpi/minute", response_model=KpiSeries)
+@router.get(
+    "/kpi/minute",
+    response_model=KpiSeries,
+    summary="Get minute KPI series",
+    description=(
+        "Returns KPI time series with minute granularity. "
+        "If from/to are omitted, default range is the last 2 hours."
+    ),
+    response_description="Minute KPI series for the selected period.",
+)
 async def kpi_minute(
     request: Request,
-    from_ts: datetime | None = Query(None, alias="from"),
-    to_ts: datetime | None = Query(None, alias="to"),
-    limit: int = Query(2000, ge=1, le=5000),
-    channel: str | None = None,
-    campaign: str | None = None,
+    from_ts: datetime | None = Query(
+        None, alias="from", description="Range start (UTC)."
+    ),
+    to_ts: datetime | None = Query(None, alias="to", description="Range end (UTC)."),
+    limit: int = Query(2000, ge=1, le=5000, description="Maximum points to return."),
+    channel: str | None = Query(None, description="Optional channel filter."),
+    campaign: str | None = Query(None, description="Optional campaign filter."),
 ) -> KpiSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
@@ -71,14 +93,25 @@ async def kpi_minute(
     )
 
 
-@router.get("/kpi/hour", response_model=KpiSeries)
+@router.get(
+    "/kpi/hour",
+    response_model=KpiSeries,
+    summary="Get hour KPI series",
+    description=(
+        "Returns KPI time series with hour granularity. "
+        "If from/to are omitted, default range is the last 3 days."
+    ),
+    response_description="Hour KPI series for the selected period.",
+)
 async def kpi_hour(
     request: Request,
-    from_ts: datetime | None = Query(None, alias="from"),
-    to_ts: datetime | None = Query(None, alias="to"),
-    limit: int = Query(2000, ge=1, le=5000),
-    channel: str | None = None,
-    campaign: str | None = None,
+    from_ts: datetime | None = Query(
+        None, alias="from", description="Range start (UTC)."
+    ),
+    to_ts: datetime | None = Query(None, alias="to", description="Range end (UTC)."),
+    limit: int = Query(2000, ge=1, le=5000, description="Maximum points to return."),
+    channel: str | None = Query(None, description="Optional channel filter."),
+    campaign: str | None = Query(None, description="Optional campaign filter."),
 ) -> KpiSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
@@ -101,12 +134,23 @@ async def kpi_hour(
     )
 
 
-@router.get("/alerts", response_model=AlertSeries)
+@router.get(
+    "/alerts",
+    response_model=AlertSeries,
+    summary="Get alerts list",
+    description=(
+        "Returns alerts in the requested time range. "
+        "If from/to are omitted, default range is the last 24 hours."
+    ),
+    response_description="Alerts list for the selected period.",
+)
 async def alerts(
     request: Request,
-    from_ts: datetime | None = Query(None, alias="from"),
-    to_ts: datetime | None = Query(None, alias="to"),
-    limit: int = Query(500, ge=1, le=2000),
+    from_ts: datetime | None = Query(
+        None, alias="from", description="Range start (UTC)."
+    ),
+    to_ts: datetime | None = Query(None, alias="to", description="Range end (UTC)."),
+    limit: int = Query(500, ge=1, le=2000, description="Maximum alerts to return."),
 ) -> AlertSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
@@ -117,24 +161,46 @@ async def alerts(
     return AlertSeries(from_ts=from_ts, to_ts=to_ts, items=items)
 
 
-@router.get("/metrics/freshness", response_model=FreshnessResponse)
+@router.get(
+    "/metrics/freshness",
+    response_model=FreshnessResponse,
+    summary="Get freshness metrics",
+    description=(
+        "Returns latest event timestamps and freshness (seconds) "
+        "for orders and sessions, optionally filtered by segment."
+    ),
+    response_description="Freshness metrics for orders and sessions.",
+)
 async def metrics_freshness(
     request: Request,
-    channel: str | None = None,
-    campaign: str | None = None,
+    channel: str | None = Query(None, description="Optional channel filter."),
+    campaign: str | None = Query(None, description="Optional campaign filter."),
 ) -> FreshnessResponse:
     pool = request.app.state.db_pool
     return await fetch_freshness_info(pool, channel, campaign)
 
 
-@router.get("/metrics/time-to-signal", response_model=TimeToSignalResponse)
+@router.get(
+    "/metrics/time-to-signal",
+    response_model=TimeToSignalResponse,
+    summary="Get time-to-signal metrics",
+    description=(
+        "Returns average and max delay between event_time and processed_time "
+        "for orders and sessions in the selected interval."
+    ),
+    response_description="Time-to-signal metrics for orders and sessions.",
+)
 async def metrics_time_to_signal(
     request: Request,
-    bucket: Literal["minute", "hour"] = Query("minute"),
-    from_ts: datetime | None = Query(None, alias="from"),
-    to_ts: datetime | None = Query(None, alias="to"),
-    channel: str | None = None,
-    campaign: str | None = None,
+    bucket: Literal["minute", "hour"] = Query(
+        "minute", description="Aggregation bucket: minute or hour."
+    ),
+    from_ts: datetime | None = Query(
+        None, alias="from", description="Range start (UTC)."
+    ),
+    to_ts: datetime | None = Query(None, alias="to", description="Range end (UTC)."),
+    channel: str | None = Query(None, description="Optional channel filter."),
+    campaign: str | None = Query(None, description="Optional campaign filter."),
 ) -> TimeToSignalResponse:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now

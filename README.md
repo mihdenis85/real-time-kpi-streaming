@@ -178,7 +178,7 @@ All endpoints require `X-API-Key` header.
 - `GET /metrics/time-to-signal?bucket=minute|hour&from=...&to=...&channel=...&campaign=...` — time-to-signal
 
 ## Frontend API Details
-All timestamps are ISO‑8601 strings in UTC.
+All timestamps are strings in UTC.
 
 ### `GET /kpi/latest`
 - Query: `bucket` (`minute` | `hour`, default `minute`)
@@ -187,8 +187,8 @@ All timestamps are ISO‑8601 strings in UTC.
 
 ### `GET /kpi/minute`
 - Query:
-  - `from` (optional, ISO datetime)
-  - `to` (optional, ISO datetime)
+  - `from` (optional, datetime)
+  - `to` (optional, datetime)
   - `limit` (optional, default 2000, max 5000)
   - `channel` (optional)
   - `campaign` (optional)
@@ -196,8 +196,8 @@ All timestamps are ISO‑8601 strings in UTC.
 
 ### `GET /kpi/hour`
 - Query:
-  - `from` (optional, ISO datetime)
-  - `to` (optional, ISO datetime)
+  - `from` (optional, datetime)
+  - `to` (optional, datetime)
   - `limit` (optional, default 2000, max 5000)
   - `channel` (optional)
   - `campaign` (optional)
@@ -205,8 +205,8 @@ All timestamps are ISO‑8601 strings in UTC.
 
 ### `GET /alerts`
 - Query:
-  - `from` (optional, ISO datetime)
-  - `to` (optional, ISO datetime)
+  - `from` (optional, datetime)
+  - `to` (optional, datetime)
   - `limit` (optional, default 500, max 2000)
 - Default window: last 24 hours.
 
