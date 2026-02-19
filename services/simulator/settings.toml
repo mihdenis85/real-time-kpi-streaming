@@ -26,7 +26,7 @@ ANOMALY_PROB = 0.02           # Вероятность аномального т
 ANOMALY_LOW_MULTIPLIER = 0.4  # Множитель для просадки.
 ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель для всплеска.
 
-SCHEDULE_MODE = "off"              # off | day-night | seasonal
+SCHEDULE_MODE = "seasonal"              # off | day-night | seasonal
 PEAK_HOURS_UTC = [9, 10, 11, 12, 13] # Пиковые часы (UTC).
 QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5] # Тихие часы (UTC).
 PEAK_MULTIPLIER = 1.6              # Множитель в пиковые часы.

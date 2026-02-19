@@ -25,7 +25,7 @@ class Settings(BaseModel):
 
     KPI: str = Field("revenue", description="KPI column to monitor")
     BASELINE_DAYS: int = Field(7, description="Baseline days for comparisons")
-    THRESHOLD_PCT: float = Field(0.3, description="Alert threshold percentage")
+    THRESHOLD_PCT: float = Field(1.0, description="Alert threshold percentage")
     MIN_BASELINE: float = Field(10, description="Minimum baseline value")
 
 
