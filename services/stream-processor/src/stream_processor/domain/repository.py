@@ -76,7 +76,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                     bucket,
                     metrics.revenue,
                     metrics.order_count,
-                    metrics.session_count,
+                    metrics.view_count,
                     metrics.checkout_count,
                     metrics.purchase_count,
                 )
@@ -88,7 +88,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                     bucket,
                     revenue,
                     order_count,
-                    session_count,
+                    view_count,
                     checkout_count,
                     purchase_count
                 )
@@ -96,7 +96,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                 ON CONFLICT (bucket) DO UPDATE SET
                     revenue = kpi_minute.revenue + EXCLUDED.revenue,
                     order_count = kpi_minute.order_count + EXCLUDED.order_count,
-                    session_count = kpi_minute.session_count + EXCLUDED.session_count,
+                    view_count = kpi_minute.view_count + EXCLUDED.view_count,
                     checkout_count = kpi_minute.checkout_count + EXCLUDED.checkout_count,
                     purchase_count = kpi_minute.purchase_count + EXCLUDED.purchase_count,
                     updated_at = NOW()
@@ -109,7 +109,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                     bucket,
                     metrics.revenue,
                     metrics.order_count,
-                    metrics.session_count,
+                    metrics.view_count,
                     metrics.checkout_count,
                     metrics.purchase_count,
                 )
@@ -121,7 +121,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                     bucket,
                     revenue,
                     order_count,
-                    session_count,
+                    view_count,
                     checkout_count,
                     purchase_count
                 )
@@ -129,7 +129,7 @@ async def flush_kpis(pool: asyncpg.Pool, minute: dict, hour: dict) -> None:
                 ON CONFLICT (bucket) DO UPDATE SET
                     revenue = kpi_hour.revenue + EXCLUDED.revenue,
                     order_count = kpi_hour.order_count + EXCLUDED.order_count,
-                    session_count = kpi_hour.session_count + EXCLUDED.session_count,
+                    view_count = kpi_hour.view_count + EXCLUDED.view_count,
                     checkout_count = kpi_hour.checkout_count + EXCLUDED.checkout_count,
                     purchase_count = kpi_hour.purchase_count + EXCLUDED.purchase_count,
                     updated_at = NOW()

@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from ingest_api.api.schemas import (
     AlertSeries,
+    AlertType,
     FreshnessResponse,
     KpiLatest,
     KpiSeries,
@@ -24,6 +25,14 @@ router = APIRouter(tags=["kpi"])
 def _ensure_range(start: datetime, end: datetime) -> None:
     if start > end:
         raise HTTPException(status_code=400, detail="from must be <= to")
+
+
+def _map_alert_kpi(kpi: AlertType | None) -> str | None:
+    if kpi is None:
+        return None
+    if kpi == AlertType.VIEWS:
+        return "view_count"
+    return "revenue"
 
 
 @router.get(
@@ -151,13 +160,14 @@ async def alerts(
     ),
     to_ts: datetime | None = Query(None, alias="to", description="Range end (UTC)."),
     limit: int = Query(500, ge=1, le=2000, description="Maximum alerts to return."),
+    kpi: AlertType | None = Query(None, description="Optional alert type filter."),
 ) -> AlertSeries:
     now = datetime.now(timezone.utc)
     to_ts = to_ts or now
     from_ts = from_ts or (to_ts - timedelta(days=1))
     _ensure_range(from_ts, to_ts)
     pool = request.app.state.db_pool
-    items = await fetch_alerts(pool, from_ts, to_ts, limit)
+    items = await fetch_alerts(pool, from_ts, to_ts, limit, _map_alert_kpi(kpi))
     return AlertSeries(from_ts=from_ts, to_ts=to_ts, items=items)
 
 

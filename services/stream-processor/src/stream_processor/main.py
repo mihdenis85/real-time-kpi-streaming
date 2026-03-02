@@ -64,7 +64,7 @@ class DedupeCache:
 class BucketMetrics:
     revenue: float = 0.0
     order_count: int = 0
-    session_count: int = 0
+    view_count: int = 0
     checkout_count: int = 0
     purchase_count: int = 0
 
@@ -84,7 +84,7 @@ class Aggregates:
                 metrics = store.setdefault(bucket, BucketMetrics())
                 metrics.revenue += delta.revenue
                 metrics.order_count += delta.order_count
-                metrics.session_count += delta.session_count
+                metrics.view_count += delta.view_count
                 metrics.checkout_count += delta.checkout_count
                 metrics.purchase_count += delta.purchase_count
 
@@ -172,7 +172,7 @@ async def _flush_kpis(
                     bucket,
                     metrics.revenue,
                     metrics.order_count,
-                    metrics.session_count,
+                    metrics.view_count,
                     metrics.checkout_count,
                     metrics.purchase_count,
                 )
@@ -184,7 +184,7 @@ async def _flush_kpis(
                     bucket,
                     revenue,
                     order_count,
-                    session_count,
+                    view_count,
                     checkout_count,
                     purchase_count
                 )
@@ -192,7 +192,7 @@ async def _flush_kpis(
                 ON CONFLICT (bucket) DO UPDATE SET
                     revenue = kpi_minute.revenue + EXCLUDED.revenue,
                     order_count = kpi_minute.order_count + EXCLUDED.order_count,
-                    session_count = kpi_minute.session_count + EXCLUDED.session_count,
+                    view_count = kpi_minute.view_count + EXCLUDED.view_count,
                     checkout_count = kpi_minute.checkout_count + EXCLUDED.checkout_count,
                     purchase_count = kpi_minute.purchase_count + EXCLUDED.purchase_count,
                     updated_at = NOW()
@@ -205,7 +205,7 @@ async def _flush_kpis(
                     bucket,
                     metrics.revenue,
                     metrics.order_count,
-                    metrics.session_count,
+                    metrics.view_count,
                     metrics.checkout_count,
                     metrics.purchase_count,
                 )
@@ -217,7 +217,7 @@ async def _flush_kpis(
                     bucket,
                     revenue,
                     order_count,
-                    session_count,
+                    view_count,
                     checkout_count,
                     purchase_count
                 )
@@ -225,7 +225,7 @@ async def _flush_kpis(
                 ON CONFLICT (bucket) DO UPDATE SET
                     revenue = kpi_hour.revenue + EXCLUDED.revenue,
                     order_count = kpi_hour.order_count + EXCLUDED.order_count,
-                    session_count = kpi_hour.session_count + EXCLUDED.session_count,
+                    view_count = kpi_hour.view_count + EXCLUDED.view_count,
                     checkout_count = kpi_hour.checkout_count + EXCLUDED.checkout_count,
                     purchase_count = kpi_hour.purchase_count + EXCLUDED.purchase_count,
                     updated_at = NOW()
@@ -263,7 +263,7 @@ async def _process_message(
             if inserted:
                 delta = BucketMetrics()
                 if payload["event_type"] == "view":
-                    delta.session_count = 1
+                    delta.view_count = 1
                 elif payload["event_type"] == "checkout":
                     delta.checkout_count = 1
                 elif payload["event_type"] == "purchase":

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -34,10 +35,11 @@ class KpiPoint(BaseModel):
     bucket: datetime
     revenue: float
     order_count: int
-    session_count: int
+    average_order_value: float = 0.0
+    view_count: int
     checkout_count: int
     purchase_count: int
-    conversion_rate: float | None = None
+    conversion_rate: float = 0.0
 
 
 class KpiSeries(BaseModel):
@@ -56,9 +58,15 @@ class KpiLatest(BaseModel):
     point: KpiPoint | None = None
 
 
+class AlertType(str, Enum):
+    REVENUE = "revenue"
+    VIEWS = "views"
+
+
 class AlertItem(BaseModel):
     bucket: datetime
     kpi: str
+    alert_type: AlertType | None = None
     current_value: float | None = None
     baseline_value: float | None = None
     delta_pct: float | None = None

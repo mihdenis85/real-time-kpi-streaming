@@ -5,7 +5,7 @@ import asyncpg
 ALLOWED_KPIS = {
     "revenue",
     "order_count",
-    "session_count",
+    "view_count",
     "checkout_count",
     "purchase_count",
 }

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS kpi_minute (
     bucket TIMESTAMPTZ PRIMARY KEY,
     revenue NUMERIC(14, 2) NOT NULL DEFAULT 0,
     order_count INTEGER NOT NULL DEFAULT 0,
-    session_count INTEGER NOT NULL DEFAULT 0,
+    view_count INTEGER NOT NULL DEFAULT 0,
     checkout_count INTEGER NOT NULL DEFAULT 0,
     purchase_count INTEGER NOT NULL DEFAULT 0,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS kpi_hour (
     bucket TIMESTAMPTZ PRIMARY KEY,
     revenue NUMERIC(14, 2) NOT NULL DEFAULT 0,
     order_count INTEGER NOT NULL DEFAULT 0,
-    session_count INTEGER NOT NULL DEFAULT 0,
+    view_count INTEGER NOT NULL DEFAULT 0,
     checkout_count INTEGER NOT NULL DEFAULT 0,
     purchase_count INTEGER NOT NULL DEFAULT 0,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -27,12 +27,18 @@ SELECT
     bucket,
     revenue,
     order_count,
-    session_count,
+    CASE
+        WHEN order_count > 0
+            THEN ROUND(revenue / order_count::NUMERIC, 2)::DOUBLE PRECISION
+        ELSE 0::DOUBLE PRECISION
+    END AS average_order_value,
+    view_count,
     checkout_count,
     purchase_count,
     CASE
-        WHEN session_count > 0 THEN purchase_count::DOUBLE PRECISION / session_count
-        ELSE NULL
+        WHEN view_count > 0
+            THEN ROUND(purchase_count::NUMERIC / view_count::NUMERIC, 2)::DOUBLE PRECISION
+        ELSE 0::DOUBLE PRECISION
     END AS conversion_rate
 FROM kpi_minute;
 
@@ -41,12 +47,18 @@ SELECT
     bucket,
     revenue,
     order_count,
-    session_count,
+    CASE
+        WHEN order_count > 0
+            THEN ROUND(revenue / order_count::NUMERIC, 2)::DOUBLE PRECISION
+        ELSE 0::DOUBLE PRECISION
+    END AS average_order_value,
+    view_count,
     checkout_count,
     purchase_count,
     CASE
-        WHEN session_count > 0 THEN purchase_count::DOUBLE PRECISION / session_count
-        ELSE NULL
+        WHEN view_count > 0
+            THEN ROUND(purchase_count::NUMERIC / view_count::NUMERIC, 2)::DOUBLE PRECISION
+        ELSE 0::DOUBLE PRECISION
     END AS conversion_rate
 FROM kpi_hour;
 

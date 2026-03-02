@@ -7,6 +7,7 @@ from services.alert_service import minute_bucket
 
 def test_validate_kpi_allows_known_values() -> None:
     assert validate_kpi("revenue") == "revenue"
+    assert validate_kpi("view_count") == "view_count"
 
 
 def test_validate_kpi_rejects_unknown_values() -> None:

@@ -4,6 +4,7 @@ import asyncpg
 
 from ingest_api.api.schemas import (
     AlertItem,
+    AlertType,
     FreshnessResponse,
     KpiPoint,
     TimeToSignalItem,
@@ -15,6 +16,14 @@ from ingest_api.domain.kpi_repository import (
     fetch_range_rows,
     fetch_time_to_signal,
 )
+
+
+def _alert_type_from_kpi(kpi: str | None) -> AlertType | None:
+    if kpi == "revenue":
+        return AlertType.REVENUE
+    if kpi == "view_count":
+        return AlertType.VIEWS
+    return None
 
 
 async def fetch_series(
@@ -45,10 +54,17 @@ async def fetch_latest_kpi(
 
 
 async def fetch_alerts(
-    pool: asyncpg.Pool, from_ts: datetime, to_ts: datetime, limit: int
+    pool: asyncpg.Pool,
+    from_ts: datetime,
+    to_ts: datetime,
+    limit: int,
+    kpi: str | None = None,
 ) -> list[AlertItem]:
-    rows = await fetch_alerts_rows(pool, from_ts, to_ts, limit)
-    return [AlertItem(**row) for row in rows]
+    rows = await fetch_alerts_rows(pool, from_ts, to_ts, limit, kpi)
+    return [
+        AlertItem(**row, alert_type=_alert_type_from_kpi(row.get("kpi")))
+        for row in rows
+    ]
 
 
 async def fetch_freshness_info(

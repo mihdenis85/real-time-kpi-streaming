@@ -10,7 +10,7 @@ DURATION_MINUTES = 3
 
 DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
 
-KPI = "revenue"
 BASELINE_DAYS = 1
 THRESHOLD_PCT = 1.0
+VIEW_THRESHOLD_PCT = 0.5
 MIN_BASELINE = 1

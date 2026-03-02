@@ -55,7 +55,7 @@ async def process_message(
             if inserted:
                 delta = BucketMetrics()
                 if payload["event_type"] == "view":
-                    delta.session_count = 1
+                    delta.view_count = 1
                 elif payload["event_type"] == "checkout":
                     delta.checkout_count = 1
                 elif payload["event_type"] == "purchase":

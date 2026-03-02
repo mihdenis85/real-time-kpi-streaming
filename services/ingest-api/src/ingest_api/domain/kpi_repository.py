@@ -2,7 +2,6 @@ from datetime import datetime
 
 import asyncpg
 
-
 _KPI_TABLES = {
     "minute": "kpi_minute_view",
     "hour": "kpi_hour_view",
@@ -28,8 +27,8 @@ async def fetch_range_rows(
     if channel is None and campaign is None:
         table = _get_table(bucket)
         query = f"""
-            SELECT bucket, revenue, order_count, session_count,
-                   checkout_count, purchase_count, conversion_rate
+            SELECT bucket, revenue, order_count, average_order_value,
+                   view_count, checkout_count, purchase_count, conversion_rate
             FROM {table}
             WHERE bucket >= $1 AND bucket <= $2
             ORDER BY bucket ASC
@@ -52,7 +51,7 @@ async def fetch_range_rows(
         ),
         sessions_agg AS (
             SELECT date_trunc($1, event_time) AS bucket,
-                   COUNT(*) FILTER (WHERE event_type = 'view') AS session_count,
+                   COUNT(*) FILTER (WHERE event_type = 'view') AS view_count,
                    COUNT(*) FILTER (WHERE event_type = 'checkout') AS checkout_count,
                    COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchase_count
             FROM sessions
@@ -65,14 +64,25 @@ async def fetch_range_rows(
             COALESCE(o.bucket, s.bucket) AS bucket,
             COALESCE(o.revenue, 0) AS revenue,
             COALESCE(o.order_count, 0) AS order_count,
-            COALESCE(s.session_count, 0) AS session_count,
+            CASE
+                WHEN COALESCE(o.order_count, 0) > 0
+                THEN ROUND(
+                    COALESCE(o.revenue, 0) / NULLIF(COALESCE(o.order_count, 0), 0)::NUMERIC,
+                    2
+                )::DOUBLE PRECISION
+                ELSE 0::DOUBLE PRECISION
+            END AS average_order_value,
+            COALESCE(s.view_count, 0) AS view_count,
             COALESCE(s.checkout_count, 0) AS checkout_count,
             COALESCE(s.purchase_count, 0) AS purchase_count,
             CASE
-                WHEN COALESCE(s.session_count, 0) > 0
-                THEN COALESCE(s.purchase_count, 0)::DOUBLE PRECISION
-                     / NULLIF(COALESCE(s.session_count, 0), 0)
-                ELSE NULL
+                WHEN COALESCE(s.view_count, 0) > 0
+                THEN ROUND(
+                    COALESCE(s.purchase_count, 0)::NUMERIC
+                    / NULLIF(COALESCE(s.view_count, 0), 0)::NUMERIC,
+                    2
+                )::DOUBLE PRECISION
+                ELSE 0::DOUBLE PRECISION
             END AS conversion_rate
         FROM orders_agg o
         FULL OUTER JOIN sessions_agg s ON o.bucket = s.bucket
@@ -93,8 +103,8 @@ async def fetch_latest_row(
     if channel is None and campaign is None:
         table = _get_table(bucket)
         query = f"""
-            SELECT bucket, revenue, order_count, session_count,
-                   checkout_count, purchase_count, conversion_rate
+            SELECT bucket, revenue, order_count, average_order_value,
+                   view_count, checkout_count, purchase_count, conversion_rate
             FROM {table}
             ORDER BY bucket DESC
             LIMIT 1
@@ -115,7 +125,7 @@ async def fetch_latest_row(
         ),
         sessions_agg AS (
             SELECT date_trunc($1, event_time) AS bucket,
-                   COUNT(*) FILTER (WHERE event_type = 'view') AS session_count,
+                   COUNT(*) FILTER (WHERE event_type = 'view') AS view_count,
                    COUNT(*) FILTER (WHERE event_type = 'checkout') AS checkout_count,
                    COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchase_count
             FROM sessions
@@ -127,14 +137,25 @@ async def fetch_latest_row(
             COALESCE(o.bucket, s.bucket) AS bucket,
             COALESCE(o.revenue, 0) AS revenue,
             COALESCE(o.order_count, 0) AS order_count,
-            COALESCE(s.session_count, 0) AS session_count,
+            CASE
+                WHEN COALESCE(o.order_count, 0) > 0
+                THEN ROUND(
+                    COALESCE(o.revenue, 0) / NULLIF(COALESCE(o.order_count, 0), 0)::NUMERIC,
+                    2
+                )::DOUBLE PRECISION
+                ELSE 0::DOUBLE PRECISION
+            END AS average_order_value,
+            COALESCE(s.view_count, 0) AS view_count,
             COALESCE(s.checkout_count, 0) AS checkout_count,
             COALESCE(s.purchase_count, 0) AS purchase_count,
             CASE
-                WHEN COALESCE(s.session_count, 0) > 0
-                THEN COALESCE(s.purchase_count, 0)::DOUBLE PRECISION
-                     / NULLIF(COALESCE(s.session_count, 0), 0)
-                ELSE NULL
+                WHEN COALESCE(s.view_count, 0) > 0
+                THEN ROUND(
+                    COALESCE(s.purchase_count, 0)::NUMERIC
+                    / NULLIF(COALESCE(s.view_count, 0), 0)::NUMERIC,
+                    2
+                )::DOUBLE PRECISION
+                ELSE 0::DOUBLE PRECISION
             END AS conversion_rate
         FROM orders_agg o
         FULL OUTER JOIN sessions_agg s ON o.bucket = s.bucket
@@ -151,17 +172,19 @@ async def fetch_alerts_rows(
     from_ts: datetime,
     to_ts: datetime,
     limit: int,
+    kpi: str | None = None,
 ) -> list[dict]:
     query = """
         SELECT bucket, kpi, current_value, baseline_value, delta_pct,
                direction, created_at
         FROM alerts
         WHERE created_at >= $1 AND created_at <= $2
+          AND ($4::text IS NULL OR kpi = $4)
         ORDER BY created_at DESC
         LIMIT $3
     """
     async with pool.acquire() as conn:
-        rows = await conn.fetch(query, from_ts, to_ts, limit)
+        rows = await conn.fetch(query, from_ts, to_ts, limit, kpi)
     return [dict(row) for row in rows]
 
 

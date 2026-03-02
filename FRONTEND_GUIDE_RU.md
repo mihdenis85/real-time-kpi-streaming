@@ -48,7 +48,8 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
     "bucket": "2026-02-05T10:59:00Z",
     "revenue": 280.0,
     "order_count": 3,
-    "session_count": 2,
+    "average_order_value": 93.33,
+    "view_count": 2,
     "checkout_count": 0,
     "purchase_count": 1,
     "conversion_rate": 0.5
@@ -69,7 +70,8 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
       "bucket": "2026-02-05T10:00:00Z",
       "revenue": 200.0,
       "order_count": 2,
-      "session_count": 1,
+      "average_order_value": 100.0,
+      "view_count": 1,
       "checkout_count": 0,
       "purchase_count": 1,
       "conversion_rate": 1.0
@@ -116,6 +118,16 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
       "delta_pct": -0.9,
       "direction": "down",
       "created_at": "2026-02-05T10:56:05Z"
+    },
+    {
+      "id": 2,
+      "bucket": "2026-02-05T10:56:00Z",
+      "kpi": "view_count",
+      "current_value": 40.0,
+      "baseline_value": 80.0,
+      "delta_pct": -0.5,
+      "direction": "down",
+      "created_at": "2026-02-05T10:57:05Z"
     }
   ]
 }
@@ -157,10 +169,11 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
 
 ## 6) Алерты
 
-`GET /alerts?from=...&to=...&limit=...`
+`GET /alerts?from=...&to=...&limit=...&kpi=revenue|views`
 
 Ответ включает:
 `current_value`, `baseline_value`, `delta_pct`, `direction`.
+Для разделения алертов по типу используй `kpi=views` или `kpi=revenue`.
 
 ---
 
@@ -190,17 +203,21 @@ GET /kpi/minute?from=2026-02-05T10:00:00Z&to=2026-02-05T11:00:00Z&channel=web&ca
 Данные: `GET /kpi/minute`  
 Поле Y: `order_count`.
 
-3) **Конверсия по минутам**  
+3) **Средний чек (AOV) по минутам**  
+Данные: `GET /kpi/minute`  
+Поле Y: `average_order_value`.
+
+4) **Конверсия по минутам**  
 Данные: `GET /kpi/minute`  
 Поле Y: `conversion_rate`.
 
-4) **Воронка (view → checkout → purchase)**  
+5) **Воронка (view → checkout → purchase)**  
 Данные: `GET /kpi/minute`  
-Поля: `session_count`, `checkout_count`, `purchase_count`.
+Поля: `view_count`, `checkout_count`, `purchase_count`.
 
-5) **Алерты**  
+6) **Алерты**  
 Данные: `GET /alerts`  
-Отображение: список с `direction`, `delta_pct`, `current_value`, `baseline_value`.
+Отображение: список с `kpi` (`revenue` или `view_count`), `direction`, `delta_pct`, `current_value`, `baseline_value`.
 
 ### Сегментированные графики
 Любой график выше можно строить с фильтрами:

@@ -76,8 +76,9 @@ ANOMALY_LOW_MULTIPLIER = 0.4
 ANOMALY_HIGH_MULTIPLIER = 1.8
 ```
 
-Conversion in KPI views is computed as:
-`conversion_rate = purchase_count / session_count`.
+Derived KPIs in views are computed as:
+- `average_order_value = revenue / order_count`
+- `conversion_rate = purchase_count / view_count`
 
 ### Schedule and Fixed Anomalies
 ```
@@ -128,7 +129,7 @@ FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0
 
 5. **Minute/hour KPI aggregates**  
    Aggregates are stored in `kpi_minute` and `kpi_hour` (revenue, counts, etc.).  
-   Views (`kpi_minute_view`, `kpi_hour_view`) add derived metrics like conversion.
+   Views (`kpi_minute_view`, `kpi_hour_view`) add derived metrics like average order value and conversion.
 
 6. **Alerting compares against a seasonal baseline**  
    Every minute it compares the latest closed bucket to past data from the same weekday/time.  
@@ -173,7 +174,7 @@ All endpoints require `X-API-Key` header.
 - `GET /kpi/latest?bucket=minute|hour` — latest KPI point
 - `GET /kpi/minute?from=...&to=...&limit=...&channel=...&campaign=...` — minute series
 - `GET /kpi/hour?from=...&to=...&limit=...&channel=...&campaign=...` — hour series
-- `GET /alerts?from=...&to=...&limit=...` — alerts list
+- `GET /alerts?from=...&to=...&limit=...&kpi=revenue|views` — alerts list (optionally filtered by type)
 - `GET /metrics/freshness?channel=...&campaign=...` — freshness indicator
 - `GET /metrics/time-to-signal?bucket=minute|hour&from=...&to=...&channel=...&campaign=...` — time-to-signal
 
@@ -208,6 +209,7 @@ All timestamps are strings in UTC.
   - `from` (optional, datetime)
   - `to` (optional, datetime)
   - `limit` (optional, default 500, max 2000)
+  - `kpi` (optional: `revenue` or `views`)
 - Default window: last 24 hours.
 
 ### `GET /metrics/freshness`

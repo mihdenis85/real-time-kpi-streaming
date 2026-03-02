@@ -33,7 +33,7 @@ docker compose up --build
 
 ### Почему этих полей достаточно
 - Выручка и количество заказов считаются по **orders**.
-- Конверсия считается как **purchase_count / session_count**.
+- Конверсия считается как **purchase_count / view_count**.
 - Сегментация работает, потому что **и orders, и sessions** несут одинаковые измерения (`channel`, `campaign`).
 
 ---
@@ -71,7 +71,8 @@ Invoke-RestMethod -Method GET "http://localhost:8000/kpi/minute?from=2026-02-03T
 Ожидаемо для бакета `10:00`:
 - revenue ≈ 280
 - order_count = 3
-- session_count = 2 (view)
+- average_order_value ≈ 93.33
+- view_count = 2 (view)
 - purchase_count = 1
 - conversion_rate = 1 / 2 = 0.5
 
@@ -87,7 +88,8 @@ Invoke-RestMethod -Method GET "http://localhost:8000/kpi/minute?from=2026-02-03T
 Ожидаемо:
 - revenue ≈ 200
 - order_count = 2
-- session_count = 1
+- average_order_value = 100
+- view_count = 1
 - purchase_count = 1
 - conversion_rate = 1 / 1 = 1.0
 
@@ -99,7 +101,8 @@ Invoke-RestMethod -Method GET "http://localhost:8000/kpi/minute?from=2026-02-03T
 Ожидаемо:
 - revenue ≈ 80
 - order_count = 1
-- session_count = 1
+- average_order_value = 80
+- view_count = 1
 - purchase_count = 0
 - conversion_rate = 0 / 1 = 0.0
 
@@ -127,6 +130,7 @@ Invoke-RestMethod -Method GET "http://localhost:8000/metrics/time-to-signal?buck
 ```
 BASELINE_DAYS = 1
 THRESHOLD_PCT = 0.1
+VIEW_THRESHOLD_PCT = 0.5
 MIN_BASELINE = 1
 LOOKBACK_MINUTES = 10
 CURRENT_WINDOW_MINUTES = 5

@@ -7,7 +7,7 @@ from datetime import datetime
 class BucketMetrics:
     revenue: float = 0.0
     order_count: int = 0
-    session_count: int = 0
+    view_count: int = 0
     checkout_count: int = 0
     purchase_count: int = 0
 
@@ -35,7 +35,7 @@ class Aggregates:
                 metrics = store.setdefault(bucket, BucketMetrics())
                 metrics.revenue += delta.revenue
                 metrics.order_count += delta.order_count
-                metrics.session_count += delta.session_count
+                metrics.view_count += delta.view_count
                 metrics.checkout_count += delta.checkout_count
                 metrics.purchase_count += delta.purchase_count
 
