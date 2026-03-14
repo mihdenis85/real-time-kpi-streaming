@@ -32,12 +32,15 @@ def test_aggregates_add_and_drain() -> None:
     ts = datetime(2026, 2, 3, 10, 0, 5, tzinfo=timezone.utc)
 
     async def run() -> None:
-        await aggregates.add(ts, BucketMetrics(revenue=10.0, order_count=1))
+        await aggregates.add(
+            ts, BucketMetrics(revenue=10.0, order_count=1, view_count=2)
+        )
         minute, hour = await aggregates.drain()
         assert len(minute) == 1
         assert len(hour) == 1
         minute_metrics = list(minute.values())[0]
         assert minute_metrics.revenue == 10.0
         assert minute_metrics.order_count == 1
+        assert minute_metrics.view_count == 2
 
     asyncio.run(run())

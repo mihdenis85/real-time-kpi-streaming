@@ -416,8 +416,10 @@ version = "0.1.0"
 source = { virtual = "services/simulator" }
 dependencies = [
     { name = "dynaconf" },
+    { name = "fastapi" },
     { name = "httpx" },
     { name = "pydantic" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.dev-dependencies]
@@ -428,8 +430,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dynaconf" },
+    { name = "fastapi", specifier = "==0.128.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "pydantic", specifier = "==2.12.5" },
+    { name = "uvicorn", extras = ["standard"], specifier = "==0.40.0" },
 ]
 
 [package.metadata.requires-dev]

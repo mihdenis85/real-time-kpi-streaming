@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import APIKeyHeader
@@ -16,23 +17,24 @@ def build_app(
         if api_key != settings.API_KEY:
             raise HTTPException(status_code=401, detail="Invalid API key")
 
-    app = FastAPI(
-        title="simulator-control",
-        version=settings.VERSION,
-        dependencies=[Depends(require_api_key)],
-    )
-
-    @app.on_event("startup")
-    async def on_startup() -> None:
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
         if settings.ENABLED:
             await controller.start()
             logger.info("Simulator autostart enabled")
         else:
             logger.info("Simulator autostart disabled")
+        try:
+            yield
+        finally:
+            await controller.stop()
 
-    @app.on_event("shutdown")
-    async def on_shutdown() -> None:
-        await controller.stop()
+    app = FastAPI(
+        title="simulator-control",
+        version=settings.VERSION,
+        dependencies=[Depends(require_api_key)],
+        lifespan=lifespan,
+    )
 
     @app.get("/health")
     async def health() -> dict[str, str | bool]:
