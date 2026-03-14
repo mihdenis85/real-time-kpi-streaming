@@ -90,6 +90,8 @@ services:
         condition: service_started
     volumes:
       - ./services/simulator/.secrets.toml:/app/.secrets.toml:ro
+    ports:
+      - "8010:8010"
 
 volumes:
   timescaledb-data:

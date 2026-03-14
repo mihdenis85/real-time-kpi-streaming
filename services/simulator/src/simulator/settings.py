@@ -14,6 +14,8 @@ class Settings(BaseModel):
     VERSION: str = Field(..., description="Service version")
     LOG_LEVEL: str = Field("INFO", description="Logging level")
     ENABLED: bool = Field(True, description="Enable simulator loop")
+    CONTROL_API_HOST: str = Field("0.0.0.0", description="Simulator control API host")
+    CONTROL_API_PORT: int = Field(8010, description="Simulator control API port")
 
     API_BASE_URL: str = Field(..., description="Ingest API base URL")
     API_KEY: str = Field(..., description="API key header")

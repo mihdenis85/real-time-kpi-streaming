@@ -178,6 +178,13 @@ All endpoints require `X-API-Key` header.
 - `GET /metrics/freshness?channel=...&campaign=...` — freshness indicator
 - `GET /metrics/time-to-signal?bucket=minute|hour&from=...&to=...&channel=...&campaign=...` — time-to-signal
 
+Simulator control API is exposed separately on port `8010`:
+All control endpoints also require `X-API-Key` header (same key as `services/simulator/.secrets.toml`).
+- `GET http://localhost:8010/health` — control API health + running status
+- `GET http://localhost:8010/simulator/status` — current simulator state
+- `POST http://localhost:8010/simulator/start` — start synthetic traffic loop
+- `POST http://localhost:8010/simulator/stop` — stop synthetic traffic loop
+
 ## Frontend API Details
 All timestamps are strings in UTC.
 

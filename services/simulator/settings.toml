@@ -4,6 +4,8 @@ VERSION = "0.1.0"
 
 LOG_LEVEL = "INFO"
 ENABLED = true     # Включить/выключить генерацию событий.
+CONTROL_API_HOST = "0.0.0.0" # Хост API симулятора.
+CONTROL_API_PORT = 8010       # Порт API симулятора.
 
 API_BASE_URL = "http://ingest-api:8000" # Базовый URL ingest API.
 SEND_INTERVAL_SECONDS = 20              # Интервал отправки тика (секунды).
