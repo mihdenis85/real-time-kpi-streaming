@@ -124,92 +124,128 @@ Invoke-RestMethod -Method GET "http://localhost:8000/metrics/time-to-signal?buck
 
 ## 6) Алерты
 
-Для быстрого теста уменьшаем пороги и задаём окно:
+Проверяем на текущих настройках алертинга (как в репозитории сейчас):
 
 В `services/alerting/settings.toml`:
 ```
 BASELINE_DAYS = 1
-THRESHOLD_PCT = 0.1
+THRESHOLD_PCT = 1.0
 VIEW_THRESHOLD_PCT = 0.5
 MIN_BASELINE = 1
 LOOKBACK_MINUTES = 10
 CURRENT_WINDOW_MINUTES = 5
 DURATION_MINUTES = 3
+INTERVAL_SECONDS = 60
 ```
 
-Перезапусти только alerting:
+### 6.1 Проверка алерта по `revenue`
+Запускай желательно в начале минуты, а не в конце, чтобы не было проблем.
+
+Базовый уровень (вчера, минуты -3/-2/-1), по 100 в каждую минуту:
 ```
-docker compose up -d --build alerting
+$run = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+
+for ($m = 3; $m -ge 1; $m--) {
+  Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-rev-base-" + $run + "-" + $m + "`",`"amount`":100,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddDays(-1).AddMinutes(-$m).ToString("o") + "`"}")
+}
 ```
 
-### 6.1 Базовый уровень (вчера, та же минута)
+Аномалия сегодня (минуты -3/-2/-1), по 250 в каждую минуту (рост > 100%):
 ```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body '{"order_id":"o-baseline","amount":100.0,"currency":"USD","channel":"web","campaign":"spring","event_time":"2026-02-02T10:00:00Z"}'
-```
-
-### 6.2 Аномалия сегодня (сильное падение)
-```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body '{"order_id":"o-drop","amount":10.0,"currency":"USD","channel":"web","campaign":"spring","event_time":"2026-02-03T10:00:00Z"}'
+for ($m = 3; $m -ge 1; $m--) {
+  Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-rev-high-" + $run + "-" + $m + "`",`"amount`":250,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddMinutes(-$m).ToString("o") + "`"}")
+}
 ```
 
-Подожди минуту. Алертинг берёт самый свежий KPI‑бакет в окне lookback.
-
-### 6.3 Проверяем алерт
+Подожди 3–4 минуты и проверь:
 ```
-Invoke-RestMethod -Method GET "http://localhost:8000/alerts?from=2026-02-03T09:55:00Z&to=2026-02-03T10:05:00Z" -Headers @{ "X-API-Key" = "dev-key" }
+Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o") + "&kpi=revenue") -Headers @{ "X-API-Key" = "dev-key" }
 ```
 
 Ожидаемо:
-- один алерт с `direction = "down"` и `delta_pct ≈ -0.9`
+- есть алерт с `kpi = "revenue"`
+- `alert_type = "revenue"`
+- `direction = "up"`
+- `delta_pct >= 1.0` (превышение порога 100%)
+
+### 6.2 Проверка алерта по `view_count`
+База вчера (минуты -3/-2/-1): по 40 view-событий в минуту
+```
+$run = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+
+for ($m = 3; $m -ge 1; $m--) {
+  for ($i = 1; $i -le 40; $i++) {
+    Invoke-RestMethod -Method POST "http://localhost:8000/events/session" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"session_id`":`"s-view-base-" + $run + "-" + $m + "-" + $i + "`",`"event_type`":`"view`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddDays(-1).AddMinutes(-$m).ToString("o") + "`"}")
+  }
+}
+```
+
+Аномалия сегодня (минуты -3/-2/-1): по 10 view-событий в минуту
+```
+for ($m = 3; $m -ge 1; $m--) {
+  for ($i = 1; $i -le 10; $i++) {
+    Invoke-RestMethod -Method POST "http://localhost:8000/events/session" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"session_id`":`"s-view-low-" + $run + "-" + $m + "-" + $i + "`",`"event_type`":`"view`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddMinutes(-$m).ToString("o") + "`"}")
+  }
+}
+```
+
+Подожди 3–4 минуты и проверь:
+```
+Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o") + "&kpi=views") -Headers @{ "X-API-Key" = "dev-key" }
+```
+
+Ожидаемо:
+- есть алерт с `kpi = "view_count"`
+- `alert_type = "views"`
+- `direction = "down"`
+- `delta_pct <= -0.5` (так как порог 50%)
 
 ---
 
-## 7) Полный тест (гарантированно)
-Шаг A — baseline (вчера, минута‑1):
+## 7) Проверка фильтрации алертов
+### 7.1 Общий список
 ```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-baseline3`",`"amount`":100,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddDays(-1).AddMinutes(-1).ToString("o") + "`"}")
-```
-
-Шаг B — аномалия (сегодня, минута‑1):
-```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-drop3`",`"amount`":10,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddMinutes(-1).ToString("o") + "`"}")
+Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o")) -Headers @{ "X-API-Key" = "dev-key" }
 ```
 
-Шаг C — подожди минуту и проверь:
+Ожидаемо: в `items` могут быть алерты обоих типов (`revenue` и `view_count`).
+
+### 7.2 Фильтр по выручке
 ```
-Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-10).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o")) -Headers @{ "X-API-Key" = "dev-key" }
+Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o") + "&kpi=revenue") -Headers @{ "X-API-Key" = "dev-key" }
 ```
 
-Ожидаемо: появился новый алерт.
+Ожидаемо: только записи с `kpi = "revenue"` и `alert_type = "revenue"`.
 
-Шаг D — нормальные данные (не должны дать новый алерт):
+### 7.3 Фильтр по просмотрам
 ```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-normal3`",`"amount`":100,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddMinutes(-1).ToString("o") + "`"}")
-```
-
-Шаг E — подожди минуту и проверь:
-```
-Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-10).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o")) -Headers @{ "X-API-Key" = "dev-key" }
+Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o") + "&kpi=views") -Headers @{ "X-API-Key" = "dev-key" }
 ```
 
-Ожидаемо: **новый алерт не появился**.
+Ожидаемо: только записи с `kpi = "view_count"` и `alert_type = "views"`.
 
 ---
 
 ## 8) Проверка “без ложных алертов”
 
-### 8.1 Нормальные данные (как baseline)
+Сохрани количество алертов до отправки:
 ```
-Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body '{"order_id":"o-normal","amount":100.0,"currency":"USD","channel":"web","campaign":"spring","event_time":"2026-02-03T10:01:00Z"}'
-```
-
-### 8.2 Проверяем алерты
-```
-Invoke-RestMethod -Method GET "http://localhost:8000/alerts?from=2026-02-03T10:00:00Z&to=2026-02-03T10:02:00Z" -Headers @{ "X-API-Key" = "dev-key" }
+$before = (Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o")) -Headers @{ "X-API-Key" = "dev-key" }).items.Count
 ```
 
-Ожидаемо:
-- новых алертов нет
+Отправь нормальные данные (без аномалии):
+```
+$run = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+Invoke-RestMethod -Method POST "http://localhost:8000/events/order" -Headers @{ "X-API-Key" = "dev-key" } -ContentType "application/json" -Body ("{`"order_id`":`"o-rev-normal-" + $run + "`",`"amount`":100,`"currency`":`"USD`",`"channel`":`"web`",`"campaign`":`"spring`",`"event_time`":`"" + (Get-Date).ToUniversalTime().AddMinutes(-1).ToString("o") + "`"}")
+```
+
+Подожди 3–4 минуты, затем проверь:
+```
+$after = (Invoke-RestMethod -Method GET ("http://localhost:8000/alerts?from=" + (Get-Date).ToUniversalTime().AddMinutes(-20).ToString("o") + "&to=" + (Get-Date).ToUniversalTime().ToString("o")) -Headers @{ "X-API-Key" = "dev-key" }).items.Count
+"before=$before after=$after"
+```
+
+Ожидаемо: `after` не больше `before` из-за этого шага (новый алерт не добавился).
 
 ---
 
