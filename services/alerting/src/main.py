@@ -14,14 +14,21 @@ async def run() -> None:
     pool = await asyncpg.create_pool(dsn=settings.DB_DSN, min_size=1, max_size=2)
     monitor_kpis = ["revenue", "view_count"]
     thresholds = {
-        "revenue": settings.THRESHOLD_PCT,
-        "view_count": settings.VIEW_THRESHOLD_PCT,
+        "revenue": {
+            "up": settings.REVENUE_UP_THRESHOLD_PCT,
+            "down": settings.REVENUE_DOWN_THRESHOLD_PCT,
+        },
+        "view_count": {
+            "up": settings.VIEW_UP_THRESHOLD_PCT,
+            "down": settings.VIEW_DOWN_THRESHOLD_PCT,
+        },
     }
     services = [
         AlertService(
             kpi=kpi,
             baseline_days=settings.BASELINE_DAYS,
-            threshold_pct=thresholds[kpi],
+            up_threshold_pct=thresholds[kpi]["up"],
+            down_threshold_pct=thresholds[kpi]["down"],
             min_baseline=settings.MIN_BASELINE,
             lookback_minutes=settings.LOOKBACK_MINUTES,
             current_window_minutes=settings.CURRENT_WINDOW_MINUTES,

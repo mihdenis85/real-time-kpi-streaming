@@ -24,10 +24,21 @@ class Settings(BaseModel):
     DB_DSN: str = Field(..., description="PostgreSQL DSN")
 
     BASELINE_DAYS: int = Field(7, description="Baseline days for comparisons")
-    THRESHOLD_PCT: float = Field(1.0, description="Alert threshold percentage")
-    VIEW_THRESHOLD_PCT: float = Field(
+    REVENUE_UP_THRESHOLD_PCT: float = Field(
+        1.0,
+        description="Alert threshold percentage for upward revenue deviations",
+    )
+    REVENUE_DOWN_THRESHOLD_PCT: float = Field(
         0.5,
-        description="Alert threshold percentage for view_count KPI",
+        description="Alert threshold percentage for downward revenue deviations",
+    )
+    VIEW_UP_THRESHOLD_PCT: float = Field(
+        0.5,
+        description="Alert threshold percentage for upward view_count deviations",
+    )
+    VIEW_DOWN_THRESHOLD_PCT: float = Field(
+        0.4,
+        description="Alert threshold percentage for downward view_count deviations",
     )
     MIN_BASELINE: float = Field(10, description="Minimum baseline value")
 

@@ -19,7 +19,8 @@ class AlertService:
         self,
         kpi: str,
         baseline_days: int,
-        threshold_pct: float,
+        up_threshold_pct: float,
+        down_threshold_pct: float,
         min_baseline: float,
         lookback_minutes: int,
         current_window_minutes: int,
@@ -27,7 +28,8 @@ class AlertService:
     ) -> None:
         self.kpi = validate_kpi(kpi)
         self.baseline_days = baseline_days
-        self.threshold_pct = threshold_pct
+        self.up_threshold_pct = up_threshold_pct
+        self.down_threshold_pct = down_threshold_pct
         self.min_baseline = min_baseline
         self.lookback_minutes = lookback_minutes
         self.current_window_minutes = current_window_minutes
@@ -57,7 +59,14 @@ class AlertService:
                 return False
 
             delta_pct = (current - baseline) / baseline
-            if abs(delta_pct) < self.threshold_pct:
+            if delta_pct > 0:
+                threshold_pct = self.up_threshold_pct
+            elif delta_pct < 0:
+                threshold_pct = self.down_threshold_pct
+            else:
+                return False
+
+            if abs(delta_pct) < threshold_pct:
                 return False
 
             if bucket == latest_bucket:
