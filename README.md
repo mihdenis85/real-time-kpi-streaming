@@ -1,35 +1,117 @@
-# Real-time KPI Platform (Kafka + TimescaleDB + FastAPI)
+# Real-time KPI Platform
 
-This repository provides a compact, production‑leaning real‑time KPI platform for SMB teams: ingestion API, Kafka (KRaft), a stream processor, TimescaleDB, and alerting.
+## Agenda
 
-## Quick Start
-1. Review each service `.secrets.toml` (local only, ignored by git).
-2. Start the stack:
-   ```bash
-   docker compose up --build
-   ```
-3. Send sample events (API key required):
-   ```bash
-   curl -X POST http://localhost:8000/events/order \
-     -H "X-API-Key: dev-key" \
-     -H "Content-Type: application/json" \
-     -d '{"order_id":"o-1","customer_id":"c-1","amount":120.5,"currency":"USD","channel":"web","event_time":"2026-02-03T10:00:00Z"}'
+- [1. About the project](#1-about-the-project)
+- [2. Tech stack](#2-tech-stack)
+- [3. Quick start](#3-quick-start)
+- [4. Configuration](#4-configuration)
+- [5. Simulator load profiles](#5-simulator-load-profiles)
+- [6. Testing](#6-testing)
 
-   curl -X POST http://localhost:8000/events/session \
-     -H "X-API-Key: dev-key" \
-     -H "Content-Type: application/json" \
-     -d '{"session_id":"s-1","event_type":"view","channel":"web","event_time":"2026-02-03T10:00:05Z"}'
-   ```
-4. Inspect KPIs:
-   - TimescaleDB: `SELECT * FROM kpi_minute_view ORDER BY bucket DESC LIMIT 10;`
+## 1. About the project
 
-Simulator is enabled by default. To stop synthetic traffic, set `ENABLED = false` in `services/simulator/settings.toml`.
+This repository contains a compact real-time KPI platform for collecting events, calculating near real-time business metrics, and detecting anomalies.
 
-## Simulator Load Profiles
-Below are sample profiles for `services/simulator/settings.toml`. Copy one block and tune as needed.
+The pipeline is built around four application services:
+
+- `ingest-api` accepts order and session events and publishes them to Kafka.
+- `stream-processor` consumes events, deduplicates them, and writes facts and aggregates to TimescaleDB.
+- `alerting` checks KPI buckets against a baseline and stores generated alerts.
+- `simulator` produces synthetic traffic for demos, testing, and load experiments.
+
+The main KPI outputs are based on orders and session events:
+
+- `revenue`
+- `order_count`
+- `view_count`
+- `purchase_count`
+- `average_order_value`
+- `conversion_rate`
+
+## 2. Tech stack
+
+- Python
+- FastAPI
+- Kafka (KRaft)
+- TimescaleDB / PostgreSQL
+- Dynaconf
+- Docker Compose
+- Pytest
+
+## 3. Quick start
+
+1. Review local `.secrets.toml` files for each service.
+1. Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+1. Send sample events:
+
+```bash
+curl -X POST http://localhost:8000/events/order \
+  -H "X-API-Key: dev-key" \
+  -H "Content-Type: application/json" \
+  -d '{"order_id":"o-1","customer_id":"c-1","amount":120.5,"currency":"USD","channel":"web","event_time":"2026-02-03T10:00:00Z"}'
+
+curl -X POST http://localhost:8000/events/session \
+  -H "X-API-Key: dev-key" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"s-1","event_type":"view","channel":"web","event_time":"2026-02-03T10:00:05Z"}'
+```
+
+1. Check the latest aggregated data in TimescaleDB:
+
+```sql
+SELECT * FROM kpi_minute_view ORDER BY bucket DESC LIMIT 10;
+```
+
+The simulator is enabled by default. To disable synthetic traffic, set `ENABLED = false` in `services/simulator/settings.toml`.
+
+## 4. Configuration
+
+Each service uses Dynaconf with `settings.toml` for defaults and `.secrets.toml` for local overrides.
+
+Example local overrides:
+
+```toml
+# services/ingest-api/.secrets.toml
+[default]
+KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
+ALLOWED_ORIGINS = ["http://localhost:5173"]
+API_KEY = "dev-key"
+
+# services/stream-processor/.secrets.toml
+[default]
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
+
+# services/alerting/.secrets.toml
+[default]
+DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
+
+# services/simulator/.secrets.toml
+[default]
+API_KEY = "dev-key"
+```
+
+Main simulator settings are stored in `services/simulator/settings.toml`, including:
+
+- traffic intensity
+- anomaly probability
+- scheduling mode
+- channel and campaign pools
+- simulator control API host and port
+
+## 5. Simulator load profiles
+
+The simulator sends synthetic order and session traffic to the ingestion API. You can tune load by changing the values in `services/simulator/settings.toml`.
 
 ### Normal
-```
+
+```toml
 ENABLED = true
 SEND_INTERVAL_SECONDS = 20
 BASE_ORDERS_PER_TICK = 2
@@ -45,7 +127,8 @@ ANOMALY_HIGH_MULTIPLIER = 2.0
 ```
 
 ### Peak
-```
+
+```toml
 ENABLED = true
 SEND_INTERVAL_SECONDS = 10
 BASE_ORDERS_PER_TICK = 5
@@ -61,7 +144,8 @@ ANOMALY_HIGH_MULTIPLIER = 2.5
 ```
 
 ### Quiet
-```
+
+```toml
 ENABLED = true
 SEND_INTERVAL_SECONDS = 30
 BASE_ORDERS_PER_TICK = 1
@@ -76,12 +160,9 @@ ANOMALY_LOW_MULTIPLIER = 0.4
 ANOMALY_HIGH_MULTIPLIER = 1.8
 ```
 
-Derived KPIs in views are computed as:
-- `average_order_value = revenue / order_count`
-- `conversion_rate = purchase_count / view_count`
+### Schedule and fixed anomalies
 
-### Schedule and Fixed Anomalies
-```
+```toml
 SCHEDULE_MODE = "day-night"
 PEAK_HOURS_UTC = [9, 10, 11, 12, 13]
 QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5]
@@ -105,158 +186,11 @@ FIXED_ANOMALY_LOW_MULTIPLIER = 0.4
 FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0
 ```
 
-## Architecture
-- `ingest-api`: FastAPI service for accepting events and publishing to Kafka.
-- `stream-processor`: Kafka consumer with dedupe, aggregation, and TimescaleDB writes.
-- `alerting`: periodic SQL checks writing alerts into `alerts`.
-- `simulator`: optional synthetic traffic generator for demo/testing.
-- `timescaledb`: event facts + KPI aggregates.
+## 6. Testing
 
-## How it Works (Detailed)
-1. **Events hit the ingestion API**  
-   Clients send JSON payloads with `event_time` and domain fields.  
-   FastAPI validates the schema and stamps `received_at`, then publishes to Kafka.
+Run unit tests for the backend services:
 
-2. **Kafka (KRaft) stores events by topic**  
-   `orders` and `sessions` are separate topics for clarity and parallelism.
-
-3. **Stream processor normalizes and deduplicates**  
-   It stamps `processed_at`, normalizes timestamps to UTC, and applies a short TTL‑based dedupe window.
-
-4. **Facts are persisted in TimescaleDB**  
-   Orders go to `orders`, session events to `sessions`.  
-   Fact tables include `event_time`, `received_at`, `processed_at` for latency/freshness analysis.
-
-5. **Minute/hour KPI aggregates**  
-   Aggregates are stored in `kpi_minute` and `kpi_hour` (revenue, counts, etc.).  
-   Views (`kpi_minute_view`, `kpi_hour_view`) add derived metrics like average order value and conversion.
-
-6. **Alerting compares against a seasonal baseline**  
-   Every minute it compares the latest closed bucket to past data from the same weekday/time.  
-   Threshold breaches create a row in `alerts`.
-
-7. **Key technical metrics**  
-   - **Latency**: `processed_at - event_time`  
-   - **Freshness**: `now - max(event_time)`  
-   - **Deduplication**: ratio of unique IDs vs total events  
-   These are computed from the database plus lightweight logs.
-
-## Configuration
-Each service uses Dynaconf with `settings.toml` (defaults) and `.secrets.toml` (local overrides).
-
-Examples:
-```
-# services/ingest-api/.secrets.toml
-[default]
-KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
-DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
-ALLOWED_ORIGINS = ["http://localhost:5173"]
-API_KEY = "dev-key"
-
-# services/stream-processor/.secrets.toml
-[default]
-DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
-
-# services/alerting/.secrets.toml
-[default]
-DB_DSN = "postgresql://kpi:kpi@timescaledb:5432/kpi"
-
-# services/simulator/.secrets.toml
-[default]
-API_KEY = "dev-key"
-```
-
-## Endpoints
-All endpoints require `X-API-Key` header.
-- `POST /events/order` — order event
-- `POST /events/session` — session step (`view`, `checkout`, `purchase`)
-- `GET /health` — healthcheck
-- `GET /kpi/latest?bucket=minute|hour` — latest KPI point
-- `GET /kpi/minute?from=...&to=...&limit=...&channel=...&campaign=...` — minute series
-- `GET /kpi/hour?from=...&to=...&limit=...&channel=...&campaign=...` — hour series
-- `GET /alerts?from=...&to=...&limit=...&kpi=revenue|views` — alerts list (optionally filtered by type)
-- `GET /metrics/freshness?channel=...&campaign=...` — freshness indicator
-- `GET /metrics/time-to-signal?bucket=minute|hour&from=...&to=...&channel=...&campaign=...` — time-to-signal
-
-Simulator control API is exposed separately on port `8010`:
-All control endpoints also require `X-API-Key` header (same key as `services/simulator/.secrets.toml`).
-- `GET http://localhost:8010/health` — control API health + running status
-- `GET http://localhost:8010/simulator/status` — current simulator state
-- `POST http://localhost:8010/simulator/start` — start synthetic traffic loop
-- `POST http://localhost:8010/simulator/stop` — stop synthetic traffic loop
-
-## Frontend API Details
-All timestamps are strings in UTC.
-
-### `GET /kpi/latest`
-- Query: `bucket` (`minute` | `hour`, default `minute`)
-- Optional filters: `channel`, `campaign`
-- Response: latest KPI point with conversion rate.
-
-### `GET /kpi/minute`
-- Query:
-  - `from` (optional, datetime)
-  - `to` (optional, datetime)
-  - `limit` (optional, default 2000, max 5000)
-  - `channel` (optional)
-  - `campaign` (optional)
-- Default window: last 2 hours.
-
-### `GET /kpi/hour`
-- Query:
-  - `from` (optional, datetime)
-  - `to` (optional, datetime)
-  - `limit` (optional, default 2000, max 5000)
-  - `channel` (optional)
-  - `campaign` (optional)
-- Default window: last 3 days.
-
-### `GET /alerts`
-- Query:
-  - `from` (optional, datetime)
-  - `to` (optional, datetime)
-  - `limit` (optional, default 500, max 2000)
-  - `kpi` (optional: `revenue` or `views`)
-- Default window: last 24 hours.
-
-### `GET /metrics/freshness`
-- Optional filters: `channel`, `campaign`
-- Returns latest event timestamps and freshness in seconds for orders and sessions.
-
-### `GET /metrics/time-to-signal`
-- Query:
-  - `bucket` (`minute` | `hour`, default `minute`)
-  - `from` / `to` (optional)
-  - `channel` (optional)
-  - `campaign` (optional)
-- Returns average and max time‑to‑signal for orders and sessions.
-
-## SQL Safety
-All queries are parameterized. The only dynamic column name (KPI in alerting) is strictly validated against a whitelist to prevent injection.
-
-## Repository Layout
-```
-db/init/
-services/
-  ingest-api/
-    settings.toml
-  stream-processor/
-    settings.toml
-  alerting/
-    settings.toml
-docker-compose.yml
-```
-
-## Local Development (uv)
-Each service is a separate Python project:
-```
-cd services/ingest-api
-uv sync
-PYTHONPATH=src uv run python -m ingest_api.main
-```
-
-## Tests
-```
+```bash
 cd services/ingest-api
 PYTHONPATH=src uv run pytest
 
