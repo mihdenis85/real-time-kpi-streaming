@@ -1,0 +1,5 @@
+asyncpg
+aiokafka
+dynaconf
+fastapi
+pytest
