@@ -3,49 +3,49 @@ SERVICE_NAME = "simulator"
 VERSION = "0.1.0"
 
 LOG_LEVEL = "INFO"
-ENABLED = true     # Включить/выключить генерацию событий.
-CONTROL_API_HOST = "0.0.0.0" # Хост API симулятора.
-CONTROL_API_PORT = 8010       # Порт API симулятора.
+ENABLED = true     # Enable/disable event generation.
+CONTROL_API_HOST = "0.0.0.0" # Simulator API host.
+CONTROL_API_PORT = 8010       # Simulator API port.
 
-API_BASE_URL = "http://ingest-api:8000" # Базовый URL ingest API.
-SEND_INTERVAL_SECONDS = 20              # Интервал отправки тика (секунды).
+API_BASE_URL = "http://ingest-api:8000" # Ingest API base URL.
+SEND_INTERVAL_SECONDS = 20              # Send interval in seconds.
 
-BASE_ORDERS_PER_TICK = 2   # Среднее число заказов за тик.
-ORDER_COUNT_JITTER = 1.0   # Разброс количества заказов.
-BASE_SESSIONS_PER_TICK = 6 # Среднее число сессий за тик.
-SESSION_COUNT_JITTER = 2.0 # Разброс количества сессий.
-MIN_VIEWS_PER_ORDER = 25   # Минимум просмотров на 1 заказ.
+BASE_ORDERS_PER_TICK = 2   # Average number of orders per tick.
+ORDER_COUNT_JITTER = 1.0   # Order count jitter.
+BASE_SESSIONS_PER_TICK = 6 # Average number of sessions per tick.
+SESSION_COUNT_JITTER = 2.0 # Session count jitter.
+MIN_VIEWS_PER_ORDER = 25   # Minimum number of views per order.
 
-PRICE_LIST_RUB = [99.0, 129.0, 149.0, 199.0, 249.0] # Доступные цены.
-ORDER_PROB = 0.04 # Базовая вероятность заказа на один просмотр.
+PRICE_LIST_RUB = [99.0, 129.0, 149.0, 199.0, 249.0] # Available prices.
+ORDER_PROB = 0.04 # Base order probability per view.
 
-CHANNELS = ["web", "ads", "marketplace"] # Доступные каналы.
-CAMPAIGNS = ["spring", "promo", "brand"] # Доступные кампании.
+CHANNELS = ["web", "ads", "marketplace"] # Available channels.
+CAMPAIGNS = ["spring", "promo", "brand"] # Available campaigns.
 
-CHECKOUT_RATE = 0.35 # Вероятность шага checkout.
+CHECKOUT_RATE = 0.35 # Checkout probability.
 
-ANOMALY_PROB = 0.02           # Вероятность аномального тика.
-ANOMALY_LOW_MULTIPLIER = 0.4  # Множитель для просадки.
-ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель для всплеска.
+ANOMALY_PROB = 0.02           # Anomaly probability per tick.
+ANOMALY_LOW_MULTIPLIER = 0.4  # Anomaly low multiplier.
+ANOMALY_HIGH_MULTIPLIER = 2.0 # Anomaly high multiplier.
 
 SCHEDULE_MODE = "seasonal"              # off | day-night | seasonal
-PEAK_HOURS_UTC = [9, 10, 11, 12, 13] # Пиковые часы (UTC).
-QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5] # Тихие часы (UTC).
-PEAK_MULTIPLIER = 1.6              # Множитель в пиковые часы.
-QUIET_MULTIPLIER = 0.6             # Множитель в тихие часы.
+PEAK_HOURS_UTC = [9, 10, 11, 12, 13] # Peak hours (UTC).
+QUIET_HOURS_UTC = [0, 1, 2, 3, 4, 5] # Quiet hours (UTC).
+PEAK_MULTIPLIER = 1.6              # Peak multiplier.
+QUIET_MULTIPLIER = 0.6             # Quiet multiplier.
 
-SEASONAL_PEAK_HOURS_UTC = [10, 11, 12, 13, 14] # Дневной пик (UTC).
-SEASONAL_EVENING_HOURS_UTC = [18, 19, 20, 21]  # Вечерний спад (UTC).
-SEASONAL_PEAK_MULTIPLIER = 1.5                 # Множитель дневного пика.
-SEASONAL_EVENING_MULTIPLIER = 0.8              # Множитель вечернего спада.
+SEASONAL_PEAK_HOURS_UTC = [10, 11, 12, 13, 14] # Daily peak (UTC).
+SEASONAL_EVENING_HOURS_UTC = [18, 19, 20, 21]  # Evening dip (UTC).
+SEASONAL_PEAK_MULTIPLIER = 1.5                 # Daily peak multiplier.
+SEASONAL_EVENING_MULTIPLIER = 0.8              # Evening dip multiplier.
 
-PEAK_ORDER_MULTIPLIER = 1.3          # Множитель вероятности заказа (пик).
-QUIET_ORDER_MULTIPLIER = 0.7         # Множитель вероятности заказа (тихо).
-SEASONAL_PEAK_ORDER_MULTIPLIER = 1.2 # Множитель вероятности заказа (дневной пик).
-SEASONAL_EVENING_ORDER_MULTIPLIER = 0.8 # Множитель вероятности заказа (вечер).
+PEAK_ORDER_MULTIPLIER = 1.3          # Peak order probability multiplier.
+QUIET_ORDER_MULTIPLIER = 0.7         # Quiet order probability multiplier.
+SEASONAL_PEAK_ORDER_MULTIPLIER = 1.2 # Daily peak order probability multiplier.
+SEASONAL_EVENING_ORDER_MULTIPLIER = 0.8 # Evening order probability multiplier.
 
-FIXED_ANOMALY_ENABLED = false      # Включить аномалии по расписанию.
-FIXED_ANOMALY_INTERVAL_MINUTES = 60 # Интервал аномалий (минуты).
+FIXED_ANOMALY_ENABLED = false      # Enable fixed anomalies.
+FIXED_ANOMALY_INTERVAL_MINUTES = 60 # Fixed anomaly interval in minutes.
 FIXED_ANOMALY_MODE = "alternate"   # low | high | alternate
-FIXED_ANOMALY_LOW_MULTIPLIER = 0.4 # Множитель фикс. просадки.
-FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0 # Множитель фикс. всплеска.
+FIXED_ANOMALY_LOW_MULTIPLIER = 0.4 # Fixed low multiplier.
+FIXED_ANOMALY_HIGH_MULTIPLIER = 2.0 # Fixed high multiplier.

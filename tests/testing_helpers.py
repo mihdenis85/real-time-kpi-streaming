@@ -9,12 +9,18 @@ import requests
 
 BASE_URL = "http://localhost:8000"
 
+
 def _load_secrets_api_key() -> str:
     try:
         import tomllib
         from pathlib import Path
 
-        settings_path = Path(__file__).resolve().parents[1] / "services" / "ingest-api" / ".secrets.toml"
+        settings_path = (
+            Path(__file__).resolve().parents[1]
+            / "services"
+            / "ingest-api"
+            / ".secrets.toml"
+        )
         if settings_path.exists():
             with settings_path.open("rb") as f:
                 data = tomllib.load(f)
@@ -22,16 +28,12 @@ def _load_secrets_api_key() -> str:
             if api_key:
                 return api_key
     except ImportError:
-        # Python <3.11: no tomllib. env fallback below.
         pass
     except Exception:
         pass
 
-    return (
-        # allow environment override for CI / custom dev settings
-        __import__("os").environ.get("INGEST_API_KEY")
-        or "dev-key"
-    )
+    return __import__("os").environ.get("INGEST_API_KEY") or "dev-key"
+
 
 API_KEY = _load_secrets_api_key()
 HEADERS = {"X-API-Key": API_KEY, "Content-Type": "application/json"}
@@ -65,7 +67,7 @@ def make_order_payload(
     order_id: str | None = None,
     customer_id: str | None = None,
     amount: float = 100.0,
-    currency: str = "USD",
+    currency: str = "RUB",
     channel: str | None = "web",
     campaign: str | None = None,
     event_time: datetime | None = None,
@@ -102,18 +104,27 @@ def make_session_payload(
     }
 
 
-def get_json(path: str, *, params: dict[str, Any] | None = None, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> dict[str, Any]:
+def get_json(
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+    timeout: float = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
     response = requests.get(
         f"{BASE_URL}{path}",
         headers=HEADERS,
         params=params,
         timeout=timeout,
     )
-    assert response.status_code == 200, f"GET {path} failed: {response.status_code} {response.text}"
+    assert response.status_code == 200, (
+        f"GET {path} failed: {response.status_code} {response.text}"
+    )
     return response.json()
 
 
-def post_json(path: str, payload: dict[str, Any], *, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> requests.Response:
+def post_json(
+    path: str, payload: dict[str, Any], *, timeout: float = DEFAULT_TIMEOUT_SECONDS
+) -> requests.Response:
     return requests.post(
         f"{BASE_URL}{path}",
         json=payload,
@@ -146,10 +157,10 @@ def wait_for_json(
         time.sleep(interval)
 
     if last_error is not None and last_payload is None:
-        raise AssertionError(f"Timed out waiting for {path}: {last_error}") from last_error
-    raise AssertionError(
-        f"Timed out waiting for {path}. Last payload: {last_payload}"
-    )
+        raise AssertionError(
+            f"Timed out waiting for {path}: {last_error}"
+        ) from last_error
+    raise AssertionError(f"Timed out waiting for {path}. Last payload: {last_payload}")
 
 
 def minute_window_around(event_time: datetime) -> tuple[datetime, datetime]:

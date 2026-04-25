@@ -18,7 +18,12 @@ from tests.testing_helpers import (
 logger = logging.getLogger(__name__)
 
 
-def _wait_for_latest_kpi(campaign: str, channel: str = "web", order_count: int | None = None, revenue: float | None = None) -> dict:
+def _wait_for_latest_kpi(
+    campaign: str,
+    channel: str = "web",
+    order_count: int | None = None,
+    revenue: float | None = None,
+) -> dict:
     def predicate(payload: dict[str, object]) -> bool:
         point = payload.get("point")
         if point is None:
@@ -26,7 +31,6 @@ def _wait_for_latest_kpi(campaign: str, channel: str = "web", order_count: int |
         if order_count is not None and point.get("order_count") != order_count:
             return False
         if revenue is not None and point.get("revenue") is not None:
-            # allow slight rounding differences
             return abs(point["revenue"] - revenue) < 0.01
         return True
 
@@ -63,12 +67,16 @@ def test_kpi_accuracy_for_known_orders() -> None:
         response = post_json("/events/order", payload)
         assert response.status_code == 200, response.text
 
-    data = _wait_for_latest_kpi(campaign, order_count=len(amounts), revenue=sum(amounts))
+    data = _wait_for_latest_kpi(
+        campaign, order_count=len(amounts), revenue=sum(amounts)
+    )
     point = data["point"]
 
     assert point["order_count"] == len(amounts)
     assert point["revenue"] == pytest.approx(sum(amounts), abs=0.01)
-    assert point["average_order_value"] == pytest.approx(sum(amounts) / len(amounts), abs=0.01)
+    assert point["average_order_value"] == pytest.approx(
+        sum(amounts) / len(amounts), abs=0.01
+    )
     assert point["view_count"] == 0
     assert point["checkout_count"] == 0
     assert point["purchase_count"] == 0
@@ -129,7 +137,7 @@ def test_duplicate_order_is_not_double_counted() -> None:
             {
                 "customer_id": "bad-1",
                 "amount": 10.0,
-                "currency": "USD",
+                "currency": "RUB",
                 "channel": "web",
                 "campaign": "invalid-missing-order-id",
                 "event_time": iso_zulu(),
@@ -141,7 +149,7 @@ def test_duplicate_order_is_not_double_counted() -> None:
                 "order_id": "bad-2",
                 "customer_id": "bad-2",
                 "amount": -1.0,
-                "currency": "USD",
+                "currency": "RUB",
                 "channel": "web",
                 "campaign": "invalid-negative-amount",
                 "event_time": iso_zulu(),
@@ -153,7 +161,7 @@ def test_duplicate_order_is_not_double_counted() -> None:
                 "order_id": "bad-3",
                 "customer_id": "bad-3",
                 "amount": 10.0,
-                "currency": "USD",
+                "currency": "RUB",
                 "channel": "web",
                 "campaign": "invalid-event-time",
                 "event_time": "not-a-date",
@@ -162,7 +170,9 @@ def test_duplicate_order_is_not_double_counted() -> None:
         ),
     ],
 )
-def test_invalid_order_payloads_are_rejected(payload: dict, expected_fragment: str) -> None:
+def test_invalid_order_payloads_are_rejected(
+    payload: dict, expected_fragment: str
+) -> None:
     """
     Verifies API payload validation.
 
